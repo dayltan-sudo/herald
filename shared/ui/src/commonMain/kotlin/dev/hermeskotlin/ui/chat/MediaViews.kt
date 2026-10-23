@@ -50,6 +50,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import com.composables.icons.lucide.Download
+import com.composables.icons.lucide.ExternalLink
 import com.composables.icons.lucide.File
 import com.composables.icons.lucide.Image
 import com.composables.icons.lucide.ImageOff
@@ -60,6 +61,7 @@ import com.composeunstyled.Text
 import com.composeunstyled.UnstyledIcon
 import com.composeunstyled.theme.Theme
 import dev.hermeskotlin.core.chat.ReplyMedia
+import dev.hermeskotlin.core.media.GatewayFileKind
 import dev.hermeskotlin.designsystem.bodySmall
 import dev.hermeskotlin.designsystem.caption
 import dev.hermeskotlin.designsystem.colors
@@ -244,6 +246,11 @@ internal fun ReplyFile(item: ReplyMedia, download: (suspend () -> FileDownload)?
         if (busy) {
             Box(Modifier.size(40.dp), contentAlignment = Alignment.Center) { Spinner(Modifier.size(18.dp)) }
         } else {
+            if (GatewayFileKind.opensInOtherApp(item.name)) {
+                IconButton(Lucide.ExternalLink, contentDescription = "Open ${item.name} in another app", onClick = {
+                    withBytes { if (!actions.open(it, item.name)) notify("No app on this phone opens ${item.name.substringAfterLast('.').uppercase()} files. Save or Share it instead.") }
+                })
+            }
             IconButton(Lucide.Download, contentDescription = "Save ${item.name}", onClick = { withBytes { notify(actions.save(it, item.name)) } })
             IconButton(Lucide.Share2, contentDescription = "Share ${item.name}", onClick = { withBytes { actions.share(it, item.name) } })
         }

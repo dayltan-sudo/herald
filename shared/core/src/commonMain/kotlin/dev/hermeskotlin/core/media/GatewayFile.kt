@@ -15,6 +15,9 @@ data class GatewayFile(val path: String, val line: Int? = null) {
 
     val kind: GatewayFileKind get() = GatewayFileKind.of(name)
 
+    /** An office document: Herald doesn't draw it, it hands it to whichever app on the phone opens it. */
+    val opensInOtherApp: Boolean get() = GatewayFileKind.opensInOtherApp(name)
+
     /**
      * The gateway file a link in this file points at. An absolute path or `file://` URI reads as [fromLink]
      * reads it in a reply. A relative one (`part2.md`, `./img/chart.png`, `../data/out.csv`, `App.kt:42`) is
@@ -202,6 +205,10 @@ enum class GatewayFileKind(val label: String) {
             }
         }
 
+        /** Word, Excel, PowerPoint and OpenDocument files, by extension: opened in another app, not in Herald. */
+        fun opensInOtherApp(name: String): Boolean = name.substringAfterLast('.', "").lowercase() in OFFICE
+
+        private val OFFICE = setOf("doc", "docx", "xls", "xlsx", "ppt", "pptx", "odt", "ods", "odp")
         private val MARKDOWN = setOf("md", "markdown", "mdx", "mdown", "mkd")
         private val JSON = setOf("json", "jsonc", "json5", "geojson", "ipynb")
         private val TABLE = setOf("csv", "tsv")

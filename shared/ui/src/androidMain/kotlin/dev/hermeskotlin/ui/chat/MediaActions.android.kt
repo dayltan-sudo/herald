@@ -1,8 +1,10 @@
 package dev.hermeskotlin.ui.chat
 
+import android.content.ActivityNotFoundException
 import android.content.ContentValues
 import android.content.Context
 import android.content.Intent
+import android.net.Uri
 import android.os.Build
 import android.os.Environment
 import android.provider.MediaStore
@@ -56,15 +58,32 @@ private class AndroidMediaActions(private val context: Context) : MediaActions {
     }
 
     override fun share(bytes: ByteArray, name: String) {
-        // A fresh folder per share keeps the original file name, which the receiving app shows.
-        val dir = File(context.cacheDir, "$SHARE_DIR/${System.currentTimeMillis()}").apply { mkdirs() }
-        val file = File(dir, name.replace('/', '_')).apply { writeBytes(bytes) }
-        val uri = FileProvider.getUriForFile(context, "${context.packageName}.attachments", file)
+        val uri = stage(bytes, name)
         val send = Intent(Intent.ACTION_SEND)
             .setType(mimeTypeOf(name))
             .putExtra(Intent.EXTRA_STREAM, uri)
             .addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
         context.startActivity(Intent.createChooser(send, null).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
+    }
+
+    override fun open(bytes: ByteArray, name: String): Boolean {
+        val view = Intent(Intent.ACTION_VIEW)
+            .setDataAndType(stage(bytes, name), mimeTypeOf(name))
+            .addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_ACTIVITY_NEW_TASK)
+        // Asking Android to resolve it first would need a <queries> entry for every type; trying it needs none.
+        return try {
+            context.startActivity(view)
+            true
+        } catch (e: ActivityNotFoundException) {
+            false
+        }
+    }
+
+    /** A fresh folder per file keeps the original file name, which the receiving app shows. */
+    private fun stage(bytes: ByteArray, name: String): Uri {
+        val dir = File(context.cacheDir, "$SHARE_DIR/${System.currentTimeMillis()}").apply { mkdirs() }
+        val file = File(dir, name.replace('/', '_')).apply { writeBytes(bytes) }
+        return FileProvider.getUriForFile(context, "${context.packageName}.attachments", file)
     }
 
     private companion object {

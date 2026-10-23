@@ -131,6 +131,19 @@ class GatewayFileTest {
     }
 
     @Test
+    fun officeDocumentsOpenInAnotherApp() {
+        listOf("report.docx", "Budget.XLSX", "deck.pptx", "old.doc", "old.xls", "notes.odt", "sheet.ods").forEach {
+            assertTrue(GatewayFile("/opt/data/out/$it").opensInOtherApp, it)
+        }
+        // Only the extension counts, and what Herald draws itself stays in Herald.
+        listOf("report.pdf", "data.csv", "notes.md", "photo.png", "docx-notes.txt", "report.docx.zip", "README").forEach {
+            assertFalse(GatewayFile("/opt/data/out/$it").opensInOtherApp, it)
+        }
+        assertTrue(GatewayFileKind.opensInOtherApp("plan.xlsx"))
+        assertFalse(GatewayFileKind.opensInOtherApp("plan"))
+    }
+
+    @Test
     fun pdfsArePreviewedAsPages() {
         assertEquals(GatewayFileKind.Pdf, GatewayFileKind.of("report.pdf"))
         assertEquals(GatewayFileKind.Pdf, GatewayFileKind.of("Q3 Summary.PDF"))

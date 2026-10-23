@@ -9,6 +9,12 @@ interface MediaActions {
 
     /** Opens the system share sheet for the file. */
     fun share(bytes: ByteArray, name: String)
+
+    /**
+     * Opens the file in an app on the phone that can show it (Word, Sheets and so on). False when nothing
+     * can, so the caller can say so and leave Save and Share to the user.
+     */
+    fun open(bytes: ByteArray, name: String): Boolean
 }
 
 @Composable
@@ -37,5 +43,12 @@ internal fun mimeTypeOf(name: String): String = when (name.substringAfterLast('.
     "mp4" -> "video/mp4"
     "xlsx" -> "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
     "docx" -> "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+    "pptx" -> "application/vnd.openxmlformats-officedocument.presentationml.presentation"
+    "doc" -> "application/msword"
+    "xls" -> "application/vnd.ms-excel"
+    "ppt" -> "application/vnd.ms-powerpoint"
+    "odt" -> "application/vnd.oasis.opendocument.text"
+    "ods" -> "application/vnd.oasis.opendocument.spreadsheet"
+    "odp" -> "application/vnd.oasis.opendocument.presentation"
     else -> "application/octet-stream"
 }
