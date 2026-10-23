@@ -17,6 +17,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -81,10 +82,9 @@ private fun UsageRow(name: String, window: UsageWindow, weekday: Boolean, muted:
         ) {
             Box(Modifier.fillMaxHeight().fillMaxWidth(usageFraction(window.percent)).background(fill))
         }
-        Text("${percentShown(window.percent)}%", style = label, color = Theme[colors][text], maxLines = 1)
-        if (reset != null) {
-            Text(reset, style = label, color = Theme[colors][textMuted], maxLines = 1, overflow = TextOverflow.Ellipsis)
-        }
+        // Fixed columns, so both rows' bars end at the same place whatever the reset label says.
+        Text("${percentShown(window.percent)}%", style = label.copy(textAlign = TextAlign.End), color = Theme[colors][text], maxLines = 1, modifier = Modifier.width(34.dp))
+        Text(reset.orEmpty(), style = label, color = Theme[colors][textMuted], maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.width(if (use24Hour) 92.dp else 112.dp))
     }
 }
 
