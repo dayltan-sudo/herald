@@ -532,6 +532,16 @@ fun ChatScreen(
         load = viewModel::previewFile,
         download = viewModel::downloadFile,
     )
+    // The page or file the agent opened beside the chat (preview.open).
+    state.preview?.let { opened ->
+        PreviewScreen(
+            target = opened,
+            host = viewModel.previewHost,
+            attach = viewModel::attachPreview,
+            onOpenFile = { previewing = it },
+            onClose = viewModel::closePreview,
+        )
+    }
     viewing?.let { image ->
         CompositionLocalProvider(LocalMediaLoader provides viewModel::loadMedia) {
             ImageViewer(image, onDismiss = { viewing = null })

@@ -188,6 +188,14 @@ class JsonRpcClient(
         put("result", result)
     })
 
+    /**
+     * Declines server request [id] the way a client that can't show it does ([SESSION_NOT_SHOWN]): the gateway
+     * counts it, leaving the request to another client, and ends the agent's wait once every client declined.
+     */
+    suspend fun decline(id: String, method: String) {
+        if (declinesNotShown) respondError(id, SESSION_NOT_SHOWN, "This app isn't showing $method.")
+    }
+
     suspend fun close() = transport.close()
 
     private suspend fun handleLine(line: String, scope: CoroutineScope) {
