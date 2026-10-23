@@ -1,0 +1,41 @@
+# Manual trigger: build the debug APKs (phone + watch) and upload them as
+# workflow artifacts, so they can be downloaded and installed without any
+# local Android/JDK toolchain. Added on dayltan-sudo's fork only; not part
+# of upstream Herald's own CI.
+name: Build debug APK artifact
+
+on:
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - uses: actions/setup-java@de7274f081f381c8f8158605e0321c36c376e2e6 # v6.0.1
+        with:
+          distribution: temurin
+          java-version: "25"
+
+      - uses: gradle/actions/setup-gradle@3f5f9adaf7d9fecd50b5935e54106014257a94e6 # v6.4.0
+
+      - name: Assemble debug APKs
+        run: ./gradlew --no-daemon :androidApp:assembleDebug :wearApp:assembleDebug
+
+      - name: Upload phone debug APK
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: herald-debug-apk
+          path: androidApp/build/outputs/apk/debug/*.apk
+
+      - name: Upload watch debug APK
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: herald-wear-debug-apk
+          path: wearApp/build/outputs/apk/debug/*.apk
+          if-no-files-found: ignore
