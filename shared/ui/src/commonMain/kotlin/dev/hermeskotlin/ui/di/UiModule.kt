@@ -11,6 +11,7 @@ import dev.hermeskotlin.ui.sessions.CapabilitiesViewModel
 import dev.hermeskotlin.ui.sessions.SkillsHubViewModel
 import dev.hermeskotlin.ui.sessions.ConfigViewModel
 import dev.hermeskotlin.ui.plugins.PluginsViewModel
+import dev.hermeskotlin.ui.sessions.ClaudeUsageViewModel
 import dev.hermeskotlin.ui.sessions.InsightsViewModel
 import dev.hermeskotlin.ui.inbox.InboxViewModel
 import dev.hermeskotlin.ui.sessions.ScheduledViewModel
@@ -42,6 +43,7 @@ val uiModule = module {
     viewModelOf(::ConfigViewModel)
     viewModelOf(::PluginsViewModel)
     viewModelOf(::InsightsViewModel)
+    viewModelOf(::ClaudeUsageViewModel)
     // Spelled out: past 22 parameters viewModelOf has no overload, and the last two are optional.
     viewModel {
         ChatViewModel(

@@ -268,6 +268,7 @@ fun SessionsSidebar(
     viewModel: SessionsViewModel = koinViewModel(),
     bots: BotsViewModel = koinViewModel(),
     rooms: RoomsViewModel = koinViewModel(),
+    claudeUsage: ClaudeUsageViewModel = koinViewModel(),
 ) {
     val state = viewModel.state.collectAsStateWithLifecycle().value
     val mode by bots.mode.collectAsStateWithLifecycle()
@@ -277,15 +278,18 @@ fun SessionsSidebar(
     val failingRoutines by bots.failingRoutines.collectAsStateWithLifecycle()
     val needsYou by bots.needsYou.collectAsStateWithLifecycle()
     val roomsState by rooms.state.collectAsStateWithLifecycle()
+    val usageState by claudeUsage.state.collectAsStateWithLifecycle()
     LaunchedEffect(gateway) {
         bots.bind(gateway.gatewayUrl)
         rooms.bind(gateway.gatewayUrl)
+        claudeUsage.bind(gateway.gatewayUrl)
     }
     // The sidebar stays composed while closed: the live statuses (a gateway poll) are worked out only while it shows.
     LaunchedEffect(visible) {
         bots.setVisible(visible)
         viewModel.setVisible(visible)
         rooms.setVisible(visible)
+        claudeUsage.setVisible(visible)
     }
     LaunchedEffect(selectedId) { bots.setOpenSession(selectedId) }
     val connection by viewModel.connectionState.collectAsStateWithLifecycle()
@@ -680,6 +684,7 @@ fun SessionsSidebar(
                                 ),
                             )
                         }
+                        if (usageState.visible) item(key = "claude-usage") { ClaudeUsageBar(usageState) }
                     }
                     state.loading -> ListSkeleton()
                     state.error != null -> EmptyState(Lucide.CloudOff, "Couldn't load sessions", state.error, error = true) {
@@ -890,6 +895,7 @@ internal fun SessionsSidebarSample(
                             ),
                         )
                     }
+                    item(key = "claude-usage") { ClaudeUsageBar(ClaudeUsageSample) }
                 }
             }
         }
