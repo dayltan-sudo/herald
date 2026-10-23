@@ -45,7 +45,7 @@ fun messageTime(epochSeconds: Double?, use24Hour: Boolean, nowMillis: Long = Clo
     return messageTime(localMoment((epochSeconds * 1000).toLong()), localMoment(nowMillis), use24Hour)
 }
 
-private fun clockTime(at: LocalMoment, use24Hour: Boolean): String {
+internal fun clockTime(at: LocalMoment, use24Hour: Boolean): String {
     val minute = at.minute.toString().padStart(2, '0')
     if (use24Hour) return "${at.hour.toString().padStart(2, '0')}:$minute"
     val hour = (at.hour % 12).let { if (it == 0) 12 else it }

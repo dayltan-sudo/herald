@@ -23,6 +23,7 @@ import dev.hermeskotlin.core.plugins.NextPromptApi
 import dev.hermeskotlin.core.plugins.PluginsApi
 import dev.hermeskotlin.core.cron.CronApi
 import dev.hermeskotlin.core.insights.InsightsApi
+import dev.hermeskotlin.core.usage.ClaudeUsageApi
 import dev.hermeskotlin.core.config.ConfigApi
 import dev.hermeskotlin.core.connection.GatewayConnection
 import dev.hermeskotlin.core.gateway.AccessTokens
@@ -96,6 +97,7 @@ val coreModule = module {
     single { PluginsApi(get()) }
     single { NextPromptApi(get(), get(), get()) }
     single { InsightsApi(get()) }
+    single { ClaudeUsageApi(get()) }
     single { ConfigApi(get()) }
     single { LastChatStore(get()) }
     single { DraftStore(get()) }
