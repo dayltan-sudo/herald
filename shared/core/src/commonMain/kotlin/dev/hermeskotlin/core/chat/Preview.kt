@@ -1,5 +1,6 @@
 package dev.hermeskotlin.core.chat
 
+import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
 
@@ -12,7 +13,10 @@ data class PreviewTarget(val target: String, val label: String = "", val version
 /** The questions the agent can put to the page Herald shows (tui_gateway/contracts/server_requests.py). */
 object PreviewBridge {
     const val READ = "preview.read"
-    val METHODS = setOf(READ)
+
+    /** `drive_preview`: look at what can be clicked, then click, type, scroll. */
+    const val ACT = "preview.act"
+    val METHODS = setOf(READ, ACT)
 
     /** The most text one read returns; the agent pages through the rest with `start`. */
     const val MAX_READ_CHARS = 20_000
@@ -28,9 +32,16 @@ class PageSnapshot(val url: String, val title: String, val text: String) {
     }
 }
 
-/** Reads the page the preview shows now; null when it can't (still loading, closed). */
-fun interface PreviewReader {
+/** The page the preview shows now: what the agent reads and drives. */
+interface PreviewHost {
+    /** The page's address, title and visible text; null when it can't say (still loading, closed). */
     suspend fun snapshot(): PageSnapshot?
+
+    /**
+     * Does one `preview.act` request (its params as the gateway sent them) and returns the JSON text answer for
+     * the agent; null when there is no page to act on.
+     */
+    suspend fun act(params: JsonObject): String?
 }
 
 /** The answer to `preview.read`, shaped like Desktop's so the agent's tool reads it the same way. */

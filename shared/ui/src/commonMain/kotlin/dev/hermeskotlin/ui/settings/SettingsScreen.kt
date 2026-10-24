@@ -472,6 +472,14 @@ internal fun SettingsView(
                     )
                     Divider()
                     SwitchRow(
+                        title = "Show the context bar",
+                        detail = "A strip above the chat with how full the context window is, the model, and what the agent is doing. Tap it for usage and cost.",
+                        checked = settings.showContextBar,
+                        onCheckedChange = { on -> onUpdate { it.copy(showContextBar = on) } },
+                        icon = Lucide.Activity,
+                    )
+                    Divider()
+                    SwitchRow(
                         title = "Message timestamps",
                         detail = "The time under each prompt and finished reply.",
                         checked = settings.showTimestamps,

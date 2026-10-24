@@ -106,6 +106,11 @@ class PreviewTest {
     }
 
     @Test
+    fun theBridgeAnswersReadsAndDrives() {
+        assertEquals(setOf("preview.read", "preview.act"), PreviewBridge.METHODS)
+    }
+
+    @Test
     fun theAnswerCarriesTheFieldsDesktopSends() {
         val json = PageSnapshot("http://pi:3000/", "Todo", "hello").slice(null, null).toJson()
         val parsed = Json.parseToJsonElement(json).jsonObject

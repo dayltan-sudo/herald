@@ -26,13 +26,18 @@ import dev.hermeskotlin.core.chat.PageSnapshot
 import dev.hermeskotlin.core.chat.PreviewDestination
 import dev.hermeskotlin.core.chat.resolvePreviewTarget
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeoutOrNull
 import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.JsonPrimitive
+import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.contentOrNull
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
+import kotlinx.serialization.json.put
 import kotlin.coroutines.resume
 
 /**
@@ -120,10 +125,12 @@ internal actual fun PreviewWebView(url: String, version: Int, controller: Previe
         controller.reload = { webView.reload() }
         controller.goBack = { webView.canGoBack().also { if (it) webView.goBack() } }
         controller.read = { readPage(webView) }
+        controller.drive = { params -> drivePage(webView, controller, params) }
         onDispose {
             controller.reload = null
             controller.goBack = null
             controller.read = null
+            controller.drive = null
             webView.stopLoading()
             webView.destroy()
             // The view's jar is on disk and outlives the page: leave the dev app's sessions out of it.
@@ -142,14 +149,22 @@ private fun openExternally(context: Context, uri: Uri) {
     }
 }
 
+/**
+ * Runs [script] in the page and gives back the string it returns (null when it returns nothing, or the page
+ * doesn't answer in time). Must be called on the main thread.
+ */
+private suspend fun evalString(view: WebView, script: String): String? {
+    val raw = withTimeoutOrNull(READ_TIMEOUT_MS) {
+        suspendCancellableCoroutine<String?> { done -> view.evaluateJavascript(script) { done.resume(it) } }
+    } ?: return null
+    // A returned string comes back as a JSON string literal.
+    return runCatching { Json.parseToJsonElement(raw).jsonPrimitive.content }.getOrNull()
+}
+
 /** The page's title and visible text, as the page itself reports them; null when it won't say in time. */
 private suspend fun readPage(view: WebView): PageSnapshot? = withContext(Dispatchers.Main) {
-    val raw = withTimeoutOrNull(READ_TIMEOUT_MS) {
-        suspendCancellableCoroutine<String?> { done -> view.evaluateJavascript(READ_SCRIPT) { done.resume(it) } }
-    } ?: return@withContext null
-    // The script returns a JSON string, which evaluateJavascript hands over as a JSON string literal.
-    val page = runCatching { Json.parseToJsonElement(Json.parseToJsonElement(raw).jsonPrimitive.content).jsonObject }.getOrNull()
-        ?: return@withContext null
+    val reply = evalString(view, READ_SCRIPT) ?: return@withContext null
+    val page = runCatching { Json.parseToJsonElement(reply).jsonObject }.getOrNull() ?: return@withContext null
     PageSnapshot(
         url = view.url.orEmpty(),
         title = page["title"]?.jsonPrimitive?.contentOrNull.orEmpty(),
@@ -157,5 +172,68 @@ private suspend fun readPage(view: WebView): PageSnapshot? = withContext(Dispatc
     )
 }
 
+private fun failure(message: String): String = buildJsonObject {
+    put("success", false)
+    put("error", message)
+}.toString()
+
+/**
+ * One `drive_preview` action on the page, answered as Desktop's tool does: an inventory of what can be clicked
+ * or typed into, then only what changed after each action. History moves and reloads are the view's own; the rest
+ * runs in the page ([PREVIEW_DRIVE_SCRIPT]), then waits for the page to settle before saying what changed.
+ */
+private suspend fun drivePage(view: WebView, controller: PreviewController, params: JsonObject): String = withContext(Dispatchers.Main) {
+    val action = (params["action"] as? JsonPrimitive)?.contentOrNull.orEmpty()
+    when (action) {
+        "back", "forward" -> {
+            val can = if (action == "back") view.canGoBack() else view.canGoForward()
+            if (!can) return@withContext failure("Nothing to go $action to.")
+            if (action == "back") view.goBack() else view.goForward()
+            return@withContext moved(view, controller)
+        }
+        "reload" -> {
+            view.reload()
+            return@withContext moved(view, controller)
+        }
+    }
+    if (evalString(view, PREVIEW_DRIVE_SCRIPT) != "ready") return@withContext failure("The page isn't ready to be driven yet.")
+    val literal = JsonPrimitive(JsonObject(params.filterKeys { it != "session_id" }).toString()).toString()
+    val ran = evalString(view, "window.__hd.run($literal)") ?: return@withContext failure("The page didn't answer.")
+    val error = runCatching { Json.parseToJsonElement(ran).jsonObject["error"]?.jsonPrimitive?.contentOrNull }.getOrNull()
+    if (error != null) return@withContext failure(error)
+    if (action != "elements") {
+        // The page may react (a request, a re-render) or move to another page: give it a moment, then wait out a load.
+        delay(SETTLE_MS)
+        var waited = 0L
+        while (controller.loading && waited < LOAD_WAIT_MS) {
+            delay(POLL_MS)
+            waited += POLL_MS
+        }
+    }
+    val delta = evalString(view, "window.__hd ? window.__hd.delta($literal) : 'moved'")
+    if (delta == null || delta == "moved") return@withContext moved(view, controller)
+    delta
+}
+
+/** After the page itself moved: the refs of the old page are gone, so say so and where it is now. */
+private suspend fun moved(view: WebView, controller: PreviewController): String {
+    delay(SETTLE_MS)
+    var waited = 0L
+    while (controller.loading && waited < LOAD_WAIT_MS) {
+        delay(POLL_MS)
+        waited += POLL_MS
+    }
+    return buildJsonObject {
+        put("success", true)
+        put("navigated", true)
+        put("url", view.url.orEmpty())
+        put("title", view.title.orEmpty())
+        put("note", "The page changed, so earlier refs are gone. Call elements again.")
+    }.toString()
+}
+
 private const val READ_TIMEOUT_MS = 5_000L
-private const val READ_SCRIPT = "(function(){return JSON.stringify({title:document.title||'',text:(document.body?document.body.innerText:'')||''});})()"
+private const val SETTLE_MS = 400L
+private const val POLL_MS = 100L
+private const val LOAD_WAIT_MS = 4_000L
+private const val READ_SCRIPT = "JSON.stringify({title:document.title||'',text:(document.body?document.body.innerText:'')||''})"

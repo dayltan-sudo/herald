@@ -8,19 +8,25 @@ import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.gestures.detectVerticalDragGestures
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -36,7 +42,7 @@ import com.composeunstyled.Text
 import com.composeunstyled.theme.Theme
 import dev.hermeskotlin.core.chat.PageSnapshot
 import dev.hermeskotlin.core.chat.PreviewDestination
-import dev.hermeskotlin.core.chat.PreviewReader
+import dev.hermeskotlin.core.chat.PreviewHost
 import dev.hermeskotlin.core.chat.PreviewTarget
 import dev.hermeskotlin.core.chat.resolvePreviewTarget
 import dev.hermeskotlin.core.media.GatewayFile
@@ -51,12 +57,13 @@ import dev.hermeskotlin.designsystem.components.Spinner
 import dev.hermeskotlin.designsystem.text as textColor
 import dev.hermeskotlin.designsystem.textTertiary
 import dev.hermeskotlin.designsystem.typography
+import kotlinx.serialization.json.JsonObject
 
 /**
  * What the page view shows and can do, shared between the platform view that owns the page and the screen
- * around it. Also the [PreviewReader] the agent's `preview.read` is answered from.
+ * around it. Also the [PreviewHost] the agent's `preview.read` and `preview.act` are answered from.
  */
-class PreviewController : PreviewReader {
+class PreviewController : PreviewHost {
     var title by mutableStateOf("")
     var address by mutableStateOf("")
     var loading by mutableStateOf(true)
@@ -64,12 +71,15 @@ class PreviewController : PreviewReader {
 
     /** Set by the platform view while it is alive. */
     var read: (suspend () -> PageSnapshot?)? = null
+    var drive: (suspend (JsonObject) -> String?)? = null
     var reload: (() -> Unit)? = null
 
     /** Steps the page back; false when it has nowhere to go back to. */
     var goBack: (() -> Boolean)? = null
 
     override suspend fun snapshot(): PageSnapshot? = read?.invoke()
+
+    override suspend fun act(params: JsonObject): String? = drive?.invoke(params)
 }
 
 /**
@@ -91,7 +101,10 @@ internal fun ColumnScope.PreviewPane(
     host: String,
     minimised: Boolean,
     onToggle: () -> Unit,
-    attach: (PreviewReader?) -> Unit,
+    /** The share of the chat's height the open pane takes, and the drag that changes it. */
+    fraction: Float,
+    onFraction: (Float) -> Unit,
+    attach: (PreviewHost?) -> Unit,
     onOpenFile: (GatewayFile) -> Unit,
     onClose: () -> Unit,
 ) {
@@ -110,7 +123,14 @@ internal fun ColumnScope.PreviewPane(
                 onDispose { attach(null) }
             }
             val uriHandler = LocalUriHandler.current
-            Column((if (minimised) Modifier else Modifier.weight(1f)).fillMaxWidth().background(Theme[colors][background])) {
+            var paneHeight by remember { mutableIntStateOf(0) }
+            val share by rememberUpdatedState(fraction)
+            // Weighted against the chat's own weight of 1, so the pane takes [fraction] of the two together.
+            val weight = (fraction / (1f - fraction)).coerceIn(0.05f, 20f)
+            Column(
+                (if (minimised) Modifier else Modifier.weight(weight)).fillMaxWidth().onSizeChanged { paneHeight = it.height }
+                    .background(Theme[colors][background]),
+            ) {
                 Row(
                     Modifier.fillMaxWidth().padding(horizontal = 8.dp, vertical = 2.dp),
                     verticalAlignment = Alignment.CenterVertically,
@@ -167,10 +187,27 @@ internal fun ColumnScope.PreviewPane(
                         }
                     }
                 }
+                if (!minimised) {
+                    // The handle between the page and the chat: drag to give either more room.
+                    Box(
+                        Modifier.fillMaxWidth().height(18.dp).pointerInput(Unit) {
+                            detectVerticalDragGestures { change, dy ->
+                                change.consume()
+                                if (paneHeight > 0) onFraction((share + dy * share / paneHeight).coerceIn(MIN_SHARE, MAX_SHARE))
+                            }
+                        },
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        Box(Modifier.width(40.dp).height(4.dp).background(Theme[colors][textTertiary], RoundedCornerShape(2.dp)))
+                    }
+                }
             }
         }
     }
 }
+
+internal const val MIN_SHARE = 0.2f
+internal const val MAX_SHARE = 0.8f
 
 @Composable
 private fun Refusal(target: String, reason: String, onClose: () -> Unit) {

@@ -1712,39 +1712,44 @@ class ChatSession(
     }
 
     /** The page the preview shows now, while it is on screen; set by the screen that draws it. */
-    @kotlin.concurrent.Volatile private var previewReader: PreviewReader? = null
+    @kotlin.concurrent.Volatile private var previewHost: PreviewHost? = null
 
-    fun attachPreview(reader: PreviewReader?) {
-        previewReader = reader
+    fun attachPreview(host: PreviewHost?) {
+        previewHost = host
     }
 
     /** The user closed the page the agent opened. */
     fun closePreview() = _state.update { it.copy(preview = null) }
 
     /**
-     * Answers `preview.read` with the page on screen. With nothing of the agent's on screen the request is
-     * declined, not answered, so a Desktop window showing the same chat can still answer it.
+     * Answers a `preview.read` or `preview.act` with the page on screen. With nothing of the agent's on screen the
+     * request is declined, not answered, so a Desktop window showing the same chat can still answer it.
      */
-    private suspend fun answerPreviewRead(request: ServerRequest) {
+    private suspend fun answerPreview(request: ServerRequest) {
         val client = connectedClient() ?: return
-        val reader = previewReader.takeIf { _state.value.preview != null }
-        val snapshot = try {
-            reader?.snapshot()
+        val host = previewHost.takeIf { _state.value.preview != null }
+        val answer = try {
+            host?.let { page ->
+                if (request.method == PreviewBridge.ACT) {
+                    page.act(request.params)
+                } else {
+                    page.snapshot()?.slice(
+                        (request.params["start"] as? JsonPrimitive)?.intOrNull,
+                        (request.params["count"] as? JsonPrimitive)?.intOrNull,
+                    )?.toJson()
+                }
+            }
         } catch (e: CancellationException) {
             throw e
         } catch (_: Exception) {
             null
         }
-        if (snapshot == null) {
+        if (answer == null) {
             runCatching { client.decline(request.id, request.method) }
             return
         }
-        val page = snapshot.slice(
-            (request.params["start"] as? JsonPrimitive)?.intOrNull,
-            (request.params["count"] as? JsonPrimitive)?.intOrNull,
-        )
         try {
-            client.respond(request.id, buildJsonObject { put("value", page.toJson()) })
+            client.respond(request.id, buildJsonObject { put("value", answer) })
         } catch (e: CancellationException) {
             throw e
         } catch (_: Exception) {
@@ -1755,8 +1760,8 @@ class ChatSession(
     private suspend fun followServerRequests() {
         connection.serverRequests.collect { request ->
             val sessionId = request.sessionId ?: return@collect
-            if (request.method == PreviewBridge.READ) {
-                if (sessionId == _state.value.runtimeSessionId) scope.launch { answerPreviewRead(request) }
+            if (request.method in PreviewBridge.METHODS) {
+                if (sessionId == _state.value.runtimeSessionId) scope.launch { answerPreview(request) }
                 return@collect
             }
             val parsed = InputRequest.parse(request.id, request.method, request.params) ?: return@collect
