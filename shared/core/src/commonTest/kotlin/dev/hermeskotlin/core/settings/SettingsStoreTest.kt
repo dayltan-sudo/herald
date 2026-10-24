@@ -132,6 +132,19 @@ class SettingsStoreTest {
     }
 
     @Test
+    fun theContextBarIsOnUntilTurnedOffAndStaysOff() = runTest {
+        assertEquals(true, AppSettings().showContextBar)
+        // Settings saved before the bar existed read as on.
+        val disk = InMemoryKeyValueStore().apply { put("settings.v1", """{"theme":"Dark"}""") }
+        val first = SettingsStore(disk, backgroundScope)
+        assertEquals(true, first.settings.filterNotNull().first().showContextBar)
+
+        first.update { it.copy(showContextBar = false) }
+        advanceUntilIdle()
+        assertEquals(false, SettingsStore(disk, backgroundScope).settings.filterNotNull().first().showContextBar)
+    }
+
+    @Test
     fun linkPreviewsRequireOptInAndRememberTheChoice() = runTest {
         assertEquals(false, AppSettings().showLinkPreviews)
         val disk = InMemoryKeyValueStore().apply { put("settings.v1", """{"theme":"Dark"}""") }

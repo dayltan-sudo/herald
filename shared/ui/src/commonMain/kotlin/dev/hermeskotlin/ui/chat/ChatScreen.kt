@@ -741,7 +741,7 @@ internal fun ChatView(
                 }
             }
             // Under the top bar, above the page the agent opened and the conversation: always in view.
-            if (state.messages.isNotEmpty()) {
+            if (state.messages.isNotEmpty() && LocalAppSettings.current.showContextBar) {
                 val contextBar = remember(state.usage, state.model, state.reasoningEffort, state.fast, state.yolo, state.todos, state.subagents) {
                     contextBarOf(state)
                 }
