@@ -37,6 +37,7 @@ import dev.hermeskotlin.core.models.ModelOption
 import dev.hermeskotlin.core.models.ModelsApi
 import dev.hermeskotlin.core.chat.ModelSwitch
 import dev.hermeskotlin.core.chat.OutgoingAttachment
+import dev.hermeskotlin.core.chat.PreviewReader
 import dev.hermeskotlin.core.chat.SendOutcome
 import dev.hermeskotlin.core.chat.canEdit
 import dev.hermeskotlin.core.chat.promptNow
@@ -604,6 +605,18 @@ class ChatViewModel(
     }
 
     override fun runControl(action: ControlAction, text: String?, index: Int?) = control.run(session.value, action, text, index)
+
+    /** The page the agent opened beside the chat, readable by the agent for as long as it is on screen. */
+    fun attachPreview(reader: PreviewReader?) {
+        session.value?.attachPreview(reader)
+    }
+
+    fun closePreview() {
+        session.value?.closePreview()
+    }
+
+    /** The gateway's host: `localhost` in an address the agent opens is that machine, which the phone reaches by this name. */
+    val previewHost: String get() = target?.gateway?.gatewayUrl?.host.orEmpty()
 
     fun loadCheckpoints() = checkpoints.load(session.value)
 

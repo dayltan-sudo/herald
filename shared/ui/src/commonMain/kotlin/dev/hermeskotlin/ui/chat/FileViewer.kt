@@ -66,6 +66,7 @@ import com.composables.icons.lucide.Braces
 import com.composables.icons.lucide.Check
 import com.composables.icons.lucide.Copy
 import com.composables.icons.lucide.Download
+import com.composables.icons.lucide.ExternalLink
 import com.composables.icons.lucide.File
 import com.composables.icons.lucide.FileCode
 import com.composables.icons.lucide.FileImage
@@ -300,6 +301,24 @@ internal fun FileViewerPage(
         }
     }
 
+    fun openElsewhere() = withBytes { bytes ->
+        notice = if (actions.open(bytes, file.name)) {
+            null
+        } else {
+            Notice("No app on this phone opens ${file.extension.uppercase()} files. Save or Share it instead.", error = true)
+        }
+    }
+
+    // A tap on an office document goes straight to the app that opens it. This page stays behind for Back,
+    // and the flag outlives a turn of the screen so the app isn't launched a second time.
+    var launched by rememberSaveable(file.path) { mutableStateOf(false) }
+    LaunchedEffect(file, preset) {
+        if (file.opensInOtherApp && preset == null && !launched) {
+            launched = true
+            openElsewhere()
+        }
+    }
+
     val textual = ready != null && kind != GatewayFileKind.Markdown && kind != GatewayFileKind.Table || ready != null && raw
 
     Column(Modifier.fillMaxSize().background(Theme[colors][background]).windowInsetsPadding(WindowInsets.safeDrawing)) {
@@ -335,6 +354,9 @@ internal fun FileViewerPage(
             if (busy || fetching) {
                 Box(Modifier.size(40.dp), contentAlignment = Alignment.Center) { Spinner(Modifier.size(18.dp)) }
             } else {
+                if (file.opensInOtherApp) {
+                    IconButton(Lucide.ExternalLink, contentDescription = "Open ${file.name} in another app", onClick = { openElsewhere() })
+                }
                 IconButton(Lucide.Download, contentDescription = "Save ${file.name}", onClick = {
                     withBytes { notice = Notice(actions.save(it, file.name)) }
                 })
@@ -420,9 +442,14 @@ internal fun FileViewerPage(
                         onSave = { withBytes { notice = Notice(actions.save(it, file.name)) } },
                         onShare = { withBytes { actions.share(it, file.name) } }.takeIf { fetched != null },
                     )
-                    ready == null -> Unavailable(file, kind, null, onSave = { withBytes { notice = Notice(actions.save(it, file.name)) } }, onShare = {
-                        withBytes { actions.share(it, file.name) }
-                    })
+                    ready == null -> Unavailable(
+                        file,
+                        kind,
+                        null,
+                        onSave = { withBytes { notice = Notice(actions.save(it, file.name)) } },
+                        onShare = { withBytes { actions.share(it, file.name) } },
+                        onOpen = { openElsewhere() }.takeIf { file.opensInOtherApp },
+                    )
                     else -> {
                         val shown = rememberLinkedPictures(file, pictures, download, onOpenPicture)
                         val onLink by rememberUpdatedState(onOpenFile)
@@ -612,7 +639,14 @@ private fun DataTable(table: DelimitedTable, modifier: Modifier) {
 
 /** No preview: why, and Save / Share so the file can still be had. */
 @Composable
-private fun Unavailable(file: GatewayFile, kind: GatewayFileKind, error: String?, onSave: () -> Unit, onShare: (() -> Unit)? = null) {
+private fun Unavailable(
+    file: GatewayFile,
+    kind: GatewayFileKind,
+    error: String?,
+    onSave: () -> Unit,
+    onShare: (() -> Unit)? = null,
+    onOpen: (() -> Unit)? = null,
+) {
     Column(
         Modifier.fillMaxSize().padding(horizontal = 24.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
@@ -633,16 +667,25 @@ private fun Unavailable(file: GatewayFile, kind: GatewayFileKind, error: String?
         )
         Spacer(Modifier.height(6.dp))
         Text(
-            error ?: "Save it to the phone, or share it to an app that opens it.",
+            error ?: if (onOpen != null) "Opens in an app on your phone. Save or share it if you'd rather." else "Save it to the phone, or share it to an app that opens it.",
             style = Theme[typography][bodySmall],
             color = Theme[colors][textTertiary],
             textAlign = TextAlign.Center,
         )
-        if (onShare != null) {
+        if (onShare != null || onOpen != null) {
             Spacer(Modifier.height(20.dp))
             Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                Button("Save", onClick = onSave, leadingIcon = Lucide.Download, size = ButtonSize.Small)
-                Button("Share", onClick = onShare, leadingIcon = Lucide.Share2, variant = ButtonVariant.Secondary, size = ButtonSize.Small)
+                if (onOpen != null) Button("Open", onClick = onOpen, leadingIcon = Lucide.ExternalLink, size = ButtonSize.Small)
+                if (onShare != null) {
+                    Button(
+                        "Save",
+                        onClick = onSave,
+                        leadingIcon = Lucide.Download,
+                        variant = if (onOpen != null) ButtonVariant.Secondary else ButtonVariant.Primary,
+                        size = ButtonSize.Small,
+                    )
+                    Button("Share", onClick = onShare, leadingIcon = Lucide.Share2, variant = ButtonVariant.Secondary, size = ButtonSize.Small)
+                }
             }
         }
     }

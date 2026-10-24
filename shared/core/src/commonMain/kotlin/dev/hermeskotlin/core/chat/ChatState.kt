@@ -187,6 +187,8 @@ data class ChatState(
     val notices: List<GatewayNotice> = emptyList(),
     /** Questions the agent is blocked on (approval, clarify, sudo, secret), oldest first. */
     val inputRequests: List<InputRequest> = emptyList(),
+    /** What the agent asked to show beside the chat (`preview.open`), until it or the user closes it. */
+    val preview: PreviewTarget? = null,
     /** The live agent's latest token totals. */
     val usage: SessionUsage? = null,
     /** [usage] when the running turn started, to tell what the turn itself took. */

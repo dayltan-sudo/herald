@@ -95,6 +95,13 @@ fun ChatState.reduce(event: GatewayEvent, now: Double? = null): ChatState {
         // The turn has ended, so a notice about the agent being built is stale even if its clear never came.
         "message.complete" -> complete(payload, now).withoutAgentNotices()
         "notification.show" -> showNotice(payload)
+        "preview.open" -> payload.string("url")?.trim()?.takeIf { it.isNotEmpty() }?.let { target ->
+            copy(preview = PreviewTarget(target, payload.string("label").orEmpty().trim(), (preview?.version ?: 0) + 1))
+        } ?: this
+        // An empty address closes the whole pane; Herald has one page, so any other closes it only if it is that page.
+        "preview.close" -> payload.string("url").orEmpty().trim().let { url ->
+            if (url.isEmpty() || url == preview?.target) copy(preview = null) else this
+        }
         "notification.clear" -> withoutNotice(payload.string("key"))
         "status.update" -> copy(status = payload.string("text")?.takeIf { it.isNotBlank() })
         // A turn cancelled while the agent was still being built ends with only an error, and no clear.

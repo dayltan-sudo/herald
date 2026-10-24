@@ -10,6 +10,7 @@ import dev.hermeskotlin.core.rpc.GatewayEvent
 import dev.hermeskotlin.core.rpc.JsonRpcClient
 import dev.hermeskotlin.core.rpc.RpcException
 import dev.hermeskotlin.core.rpc.RpcTimeoutException
+import dev.hermeskotlin.core.rpc.ServerRequest
 import dev.hermeskotlin.core.sessions.SessionMessage
 import dev.hermeskotlin.core.sessions.SessionsApi
 import dev.hermeskotlin.core.sessions.putStartInstruction
@@ -42,6 +43,7 @@ import kotlinx.serialization.json.JsonObjectBuilder
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.contentOrNull
+import kotlinx.serialization.json.intOrNull
 import kotlinx.serialization.json.put
 
 /**
@@ -1709,9 +1711,54 @@ class ChatSession(
         }
     }
 
+    /** The page the preview shows now, while it is on screen; set by the screen that draws it. */
+    @kotlin.concurrent.Volatile private var previewReader: PreviewReader? = null
+
+    fun attachPreview(reader: PreviewReader?) {
+        previewReader = reader
+    }
+
+    /** The user closed the page the agent opened. */
+    fun closePreview() = _state.update { it.copy(preview = null) }
+
+    /**
+     * Answers `preview.read` with the page on screen. With nothing of the agent's on screen the request is
+     * declined, not answered, so a Desktop window showing the same chat can still answer it.
+     */
+    private suspend fun answerPreviewRead(request: ServerRequest) {
+        val client = connectedClient() ?: return
+        val reader = previewReader.takeIf { _state.value.preview != null }
+        val snapshot = try {
+            reader?.snapshot()
+        } catch (e: CancellationException) {
+            throw e
+        } catch (_: Exception) {
+            null
+        }
+        if (snapshot == null) {
+            runCatching { client.decline(request.id, request.method) }
+            return
+        }
+        val page = snapshot.slice(
+            (request.params["start"] as? JsonPrimitive)?.intOrNull,
+            (request.params["count"] as? JsonPrimitive)?.intOrNull,
+        )
+        try {
+            client.respond(request.id, buildJsonObject { put("value", page.toJson()) })
+        } catch (e: CancellationException) {
+            throw e
+        } catch (_: Exception) {
+            // The gateway drops an answer that arrives after the agent stopped waiting.
+        }
+    }
+
     private suspend fun followServerRequests() {
         connection.serverRequests.collect { request ->
             val sessionId = request.sessionId ?: return@collect
+            if (request.method == PreviewBridge.READ) {
+                if (sessionId == _state.value.runtimeSessionId) scope.launch { answerPreviewRead(request) }
+                return@collect
+            }
             val parsed = InputRequest.parse(request.id, request.method, request.params) ?: return@collect
             if (sessionId == _state.value.runtimeSessionId) {
                 _state.update { it.copy(inputRequests = it.inputRequests.plusNew(listOf(parsed))) }
