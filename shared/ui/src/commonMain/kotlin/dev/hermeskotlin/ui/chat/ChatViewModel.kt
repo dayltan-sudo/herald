@@ -37,7 +37,7 @@ import dev.hermeskotlin.core.models.ModelOption
 import dev.hermeskotlin.core.models.ModelsApi
 import dev.hermeskotlin.core.chat.ModelSwitch
 import dev.hermeskotlin.core.chat.OutgoingAttachment
-import dev.hermeskotlin.core.chat.PreviewReader
+import dev.hermeskotlin.core.chat.PreviewHost
 import dev.hermeskotlin.core.chat.SendOutcome
 import dev.hermeskotlin.core.chat.canEdit
 import dev.hermeskotlin.core.chat.promptNow
@@ -607,7 +607,7 @@ class ChatViewModel(
     override fun runControl(action: ControlAction, text: String?, index: Int?) = control.run(session.value, action, text, index)
 
     /** The page the agent opened beside the chat, readable by the agent for as long as it is on screen. */
-    fun attachPreview(reader: PreviewReader?) {
+    fun attachPreview(reader: PreviewHost?) {
         session.value?.attachPreview(reader)
     }
 

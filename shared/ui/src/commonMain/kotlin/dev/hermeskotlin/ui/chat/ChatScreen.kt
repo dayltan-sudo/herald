@@ -428,6 +428,7 @@ fun ChatScreen(
     }
     // The page or file the agent opened beside the chat (preview.open): above the conversation, foldable.
     var previewFolded by rememberSaveable { mutableStateOf(false) }
+    var previewShare by rememberSaveable { mutableStateOf(0.5f) }
     val opened = state.preview
     LaunchedEffect(opened?.version) { previewFolded = false }
     val previewPane: (@Composable ColumnScope.() -> Unit)? = if (opened == null) {
@@ -439,6 +440,8 @@ fun ChatScreen(
                 host = viewModel.previewHost,
                 minimised = previewFolded,
                 onToggle = { previewFolded = !previewFolded },
+                fraction = previewShare,
+                onFraction = { previewShare = it },
                 attach = viewModel::attachPreview,
                 onOpenFile = { previewing = it },
                 onClose = viewModel::closePreview,
