@@ -1727,7 +1727,10 @@ class ChatSession(
      */
     private suspend fun answerPreview(request: ServerRequest) {
         val client = connectedClient() ?: return
-        val host = previewHost.takeIf { _state.value.preview != null }
+        val hostSet = previewHost != null
+        val previewSet = _state.value.preview != null
+        var threw: String? = null
+        val host = previewHost.takeIf { previewSet }
         val answer = try {
             host?.let { page ->
                 if (request.method == PreviewBridge.ACT) {
@@ -1741,15 +1744,19 @@ class ChatSession(
             }
         } catch (e: CancellationException) {
             throw e
-        } catch (_: Exception) {
+        } catch (e: Exception) {
+            threw = e::class.simpleName
             null
         }
-        if (answer == null) {
-            runCatching { client.decline(request.id, request.method) }
-            return
-        }
+        // DIAGNOSTIC BUILD: answer with why Herald would have declined, so the agent's tool result carries it.
+        val reported = answer ?: buildJsonObject {
+            put("success", false)
+            put("error", "Herald declined ${request.method}: previewHost=${if (hostSet) "set" else "null"}, " +
+                "state.preview=${if (previewSet) "set" else "null"}, threw=${threw ?: "no"}, " +
+                "runtime=${_state.value.runtimeSessionId}")
+        }.toString()
         try {
-            client.respond(request.id, buildJsonObject { put("value", answer) })
+            client.respond(request.id, buildJsonObject { put("value", reported) })
         } catch (e: CancellationException) {
             throw e
         } catch (_: Exception) {
