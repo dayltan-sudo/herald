@@ -4,14 +4,13 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
@@ -27,8 +26,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.window.Dialog
-import androidx.compose.ui.window.DialogProperties
+import com.composables.icons.lucide.ChevronDown
+import com.composables.icons.lucide.ChevronUp
 import com.composables.icons.lucide.ExternalLink
 import com.composables.icons.lucide.Lucide
 import com.composables.icons.lucide.RefreshCw
@@ -81,14 +80,17 @@ class PreviewController : PreviewReader {
 internal expect fun PreviewWebView(url: String, version: Int, controller: PreviewController, host: String, modifier: Modifier)
 
 /**
- * The page or file the agent opened with `preview.open`, full screen over the chat. A web address (the
- * gateway's own `localhost` read as the gateway) opens in the page view; a file on the gateway goes to the file
- * viewer; anything else says why it won't open. While a page is on screen the agent can read it (`preview.read`).
+ * The page or file the agent opened with `preview.open`, in the chat's own column above the conversation, so the
+ * chat stays usable beside it. A web address (the gateway's own `localhost` read as the gateway) opens in the page
+ * view; a file on the gateway goes to the file viewer; anything else says why it won't open. [minimised] folds it
+ * to its title bar, with the page still loaded and still readable by the agent (`preview.read`).
  */
 @Composable
-internal fun PreviewScreen(
+internal fun ColumnScope.PreviewPane(
     target: PreviewTarget,
     host: String,
+    minimised: Boolean,
+    onToggle: () -> Unit,
     attach: (PreviewReader?) -> Unit,
     onOpenFile: (GatewayFile) -> Unit,
     onClose: () -> Unit,
@@ -100,9 +102,7 @@ internal fun PreviewScreen(
             onOpenFile(GatewayFile(destination.path))
             close()
         }
-        is PreviewDestination.Refused -> PreviewFrame(onDismiss = onClose) {
-            Refusal(target.target, destination.reason, onClose)
-        }
+        is PreviewDestination.Refused -> Refusal(target.target, destination.reason, onClose)
         is PreviewDestination.Web -> {
             val controller = remember(destination.url) { PreviewController() }
             DisposableEffect(controller) {
@@ -110,56 +110,60 @@ internal fun PreviewScreen(
                 onDispose { attach(null) }
             }
             val uriHandler = LocalUriHandler.current
-            PreviewFrame(onDismiss = { if (controller.goBack?.invoke() != true) onClose() }) {
-                Column(Modifier.fillMaxSize().windowInsetsPadding(WindowInsets.safeDrawing)) {
-                    Row(
-                        Modifier.fillMaxWidth().padding(horizontal = 8.dp, vertical = 4.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(4.dp),
-                    ) {
-                        BarButton(Lucide.X, "Close the preview", onClick = onClose)
-                        Column(Modifier.weight(1f)) {
-                            Text(
-                                controller.title.ifBlank { target.label.ifBlank { "Preview" } },
-                                style = Theme[typography][body].copy(fontWeight = FontWeight.SemiBold),
-                                color = Theme[colors][textColor],
-                                maxLines = 1,
-                                overflow = TextOverflow.Ellipsis,
-                            )
-                            Text(
-                                controller.address.ifBlank { destination.url },
-                                style = Theme[typography][caption],
-                                color = Theme[colors][textTertiary],
-                                maxLines = 1,
-                                overflow = TextOverflow.MiddleEllipsis,
-                            )
-                        }
-                        if (controller.loading) Spinner(Modifier.size(16.dp))
-                        BarButton(Lucide.RefreshCw, "Reload the page", onClick = { controller.reload?.invoke() })
-                        BarButton(Lucide.ExternalLink, "Open in the browser", onClick = {
-                            runCatching { uriHandler.openUri(controller.address.ifBlank { destination.url }) }
-                        })
+            Column((if (minimised) Modifier else Modifier.weight(1f)).fillMaxWidth().background(Theme[colors][background])) {
+                Row(
+                    Modifier.fillMaxWidth().padding(horizontal = 8.dp, vertical = 2.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(2.dp),
+                ) {
+                    BarButton(Lucide.X, "Close the preview", onClick = onClose)
+                    Column(Modifier.weight(1f)) {
+                        Text(
+                            controller.title.ifBlank { target.label.ifBlank { "Preview" } },
+                            style = Theme[typography][body].copy(fontWeight = FontWeight.SemiBold),
+                            color = Theme[colors][textColor],
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                        )
+                        Text(
+                            controller.address.ifBlank { destination.url },
+                            style = Theme[typography][caption],
+                            color = Theme[colors][textTertiary],
+                            maxLines = 1,
+                            overflow = TextOverflow.MiddleEllipsis,
+                        )
                     }
-                    Box(Modifier.weight(1f).fillMaxWidth()) {
-                        PreviewWebView(destination.url, target.version, controller, host, Modifier.fillMaxSize())
-                        if (controller.failed) {
-                            Column(
-                                Modifier.fillMaxSize().background(Theme[colors][background]).padding(24.dp),
-                                horizontalAlignment = Alignment.CenterHorizontally,
-                                verticalArrangement = Arrangement.spacedBy(12.dp, Alignment.CenterVertically),
-                            ) {
-                                Text("Couldn't load the page.", style = Theme[typography][body], color = Theme[colors][textColor])
-                                Text(
-                                    "A dev server on the gateway's machine has to listen on its network address, not only on localhost.",
-                                    style = Theme[typography][bodySmall],
-                                    color = Theme[colors][textTertiary],
-                                    textAlign = TextAlign.Center,
-                                )
-                                Button("Try again", onClick = {
-                                    controller.failed = false
-                                    controller.reload?.invoke()
-                                }, size = ButtonSize.Small)
-                            }
+                    if (controller.loading) Spinner(Modifier.size(16.dp))
+                    BarButton(Lucide.RefreshCw, "Reload the page", onClick = { controller.reload?.invoke() })
+                    BarButton(Lucide.ExternalLink, "Open in the browser", onClick = {
+                        runCatching { uriHandler.openUri(controller.address.ifBlank { destination.url }) }
+                    })
+                    BarButton(
+                        if (minimised) Lucide.ChevronDown else Lucide.ChevronUp,
+                        if (minimised) "Show the preview" else "Minimise the preview",
+                        onClick = onToggle,
+                    )
+                }
+                // Folded, the page stays in the layout one dp high: still loaded, still readable.
+                Box((if (minimised) Modifier.height(1.dp) else Modifier.weight(1f)).fillMaxWidth()) {
+                    PreviewWebView(destination.url, target.version, controller, host, Modifier.fillMaxSize())
+                    if (controller.failed && !minimised) {
+                        Column(
+                            Modifier.fillMaxSize().background(Theme[colors][background]).padding(24.dp),
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                            verticalArrangement = Arrangement.spacedBy(12.dp, Alignment.CenterVertically),
+                        ) {
+                            Text("Couldn't load the page.", style = Theme[typography][body], color = Theme[colors][textColor])
+                            Text(
+                                "A dev server on the gateway's machine has to listen on its network address, not only on localhost.",
+                                style = Theme[typography][bodySmall],
+                                color = Theme[colors][textTertiary],
+                                textAlign = TextAlign.Center,
+                            )
+                            Button("Try again", onClick = {
+                                controller.failed = false
+                                controller.reload?.invoke()
+                            }, size = ButtonSize.Small)
                         }
                     }
                 }
@@ -169,21 +173,11 @@ internal fun PreviewScreen(
 }
 
 @Composable
-private fun PreviewFrame(onDismiss: () -> Unit, content: @Composable () -> Unit) {
-    Dialog(
-        onDismissRequest = onDismiss,
-        properties = DialogProperties(usePlatformDefaultWidth = false, decorFitsSystemWindows = false, dismissOnClickOutside = false),
-    ) {
-        Box(Modifier.fillMaxSize().background(Theme[colors][background])) { content() }
-    }
-}
-
-@Composable
 private fun Refusal(target: String, reason: String, onClose: () -> Unit) {
     Column(
-        Modifier.fillMaxSize().windowInsetsPadding(WindowInsets.safeDrawing).padding(24.dp),
+        Modifier.fillMaxWidth().background(Theme[colors][background]).padding(16.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.spacedBy(12.dp, Alignment.CenterVertically),
+        verticalArrangement = Arrangement.spacedBy(8.dp),
     ) {
         Text("Herald won't open this preview", style = Theme[typography][body].copy(fontWeight = FontWeight.SemiBold), color = Theme[colors][textColor])
         Text(reason, style = Theme[typography][bodySmall], color = Theme[colors][textTertiary], textAlign = TextAlign.Center)

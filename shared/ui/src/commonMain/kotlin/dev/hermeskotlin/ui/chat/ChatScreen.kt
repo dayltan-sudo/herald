@@ -426,6 +426,25 @@ fun ChatScreen(
     val mentions = remember(mention, faces, target.bot) {
         mention?.let { faces.bots.mentionable(it.query, self = target.bot?.name) }.orEmpty()
     }
+    // The page or file the agent opened beside the chat (preview.open): above the conversation, foldable.
+    var previewFolded by rememberSaveable { mutableStateOf(false) }
+    val opened = state.preview
+    LaunchedEffect(opened?.version) { previewFolded = false }
+    val previewPane: (@Composable ColumnScope.() -> Unit)? = if (opened == null) {
+        null
+    } else {
+        {
+            PreviewPane(
+                target = opened,
+                host = viewModel.previewHost,
+                minimised = previewFolded,
+                onToggle = { previewFolded = !previewFolded },
+                attach = viewModel::attachPreview,
+                onOpenFile = { previewing = it },
+                onClose = viewModel::closePreview,
+            )
+        }
+    }
     ChatView(
         // A bot's chat is titled "Bot Chat" on the gateway; the bot's name says more.
         title = target.bot?.label ?: state.title?.takeIf { it.isNotBlank() } ?: target.title ?: "New chat",
@@ -481,6 +500,7 @@ fun ChatScreen(
         onOpenOtherChat = onOpenOtherChat,
         onDismissOtherChat = onDismissOtherChat,
         onNextChat = onNextChat?.let { next -> { if (!next()) notice = "Nothing waiting" } },
+        previewPane = previewPane,
     )
 
     AttachSheet(visible = attachOpen, onDismiss = { attachOpen = false }, picker = attachmentPicker)
@@ -532,16 +552,6 @@ fun ChatScreen(
         load = viewModel::previewFile,
         download = viewModel::downloadFile,
     )
-    // The page or file the agent opened beside the chat (preview.open).
-    state.preview?.let { opened ->
-        PreviewScreen(
-            target = opened,
-            host = viewModel.previewHost,
-            attach = viewModel::attachPreview,
-            onOpenFile = { previewing = it },
-            onClose = viewModel::closePreview,
-        )
-    }
     viewing?.let { image ->
         CompositionLocalProvider(LocalMediaLoader provides viewModel::loadMedia) {
             ImageViewer(image, onDismiss = { viewing = null })
@@ -635,6 +645,8 @@ internal fun ChatView(
     onOpenOtherChat: (OtherChatEvent) -> Unit = {},
     onDismissOtherChat: (OtherChatEvent) -> Unit = {},
     onNextChat: (() -> Unit)? = null,
+    /** The page the agent opened beside the chat, drawn above the conversation; null when there is none. */
+    previewPane: (@Composable ColumnScope.() -> Unit)? = null,
 ) {
     Box(
         Modifier
@@ -721,6 +733,7 @@ internal fun ChatView(
                         comments.filter { it.source.messageKey == messageKey }.flatMap { it.highlights }
                 }
             }
+            previewPane?.invoke(this)
             Box(Modifier.weight(1f).fillMaxWidth()) {
                 Box(Modifier.fillMaxSize().hazeSource(hazeState)) {
                     if (wallpaper != null) ChatWallpaper(wallpaper, LocalAppSettings.current.wallpaperStrength, Modifier.fillMaxSize())
