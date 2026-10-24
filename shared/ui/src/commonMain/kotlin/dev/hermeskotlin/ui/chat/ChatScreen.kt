@@ -211,6 +211,7 @@ import dev.hermeskotlin.core.chat.ChatMessage
 import dev.hermeskotlin.core.chat.TranscriptEvent
 import dev.hermeskotlin.core.chat.GatewayNotice
 import dev.hermeskotlin.core.chat.ChatState
+import dev.hermeskotlin.core.chat.contextBarOf
 import dev.hermeskotlin.core.chat.OutgoingAttachment
 import dev.hermeskotlin.core.chat.SendCheck
 import dev.hermeskotlin.core.chat.SessionRefusal
@@ -504,6 +505,7 @@ fun ChatScreen(
         onDismissOtherChat = onDismissOtherChat,
         onNextChat = onNextChat?.let { next -> { if (!next()) notice = "Nothing waiting" } },
         previewPane = previewPane,
+        onOpenUsage = { usageOpen = true },
     )
 
     AttachSheet(visible = attachOpen, onDismiss = { attachOpen = false }, picker = attachmentPicker)
@@ -650,6 +652,8 @@ internal fun ChatView(
     onNextChat: (() -> Unit)? = null,
     /** The page the agent opened beside the chat, drawn above the conversation; null when there is none. */
     previewPane: (@Composable ColumnScope.() -> Unit)? = null,
+    /** Opens the usage sheet from the context bar. */
+    onOpenUsage: () -> Unit = {},
 ) {
     Box(
         Modifier
@@ -735,6 +739,13 @@ internal fun ChatView(
                     override fun highlights(messageKey: String) =
                         comments.filter { it.source.messageKey == messageKey }.flatMap { it.highlights }
                 }
+            }
+            // Under the top bar, above the page the agent opened and the conversation: always in view.
+            if (state.messages.isNotEmpty()) {
+                val contextBar = remember(state.usage, state.model, state.reasoningEffort, state.fast, state.yolo, state.todos, state.subagents) {
+                    contextBarOf(state)
+                }
+                ContextBarRow(contextBar, onClick = onOpenUsage)
             }
             previewPane?.invoke(this)
             Box(Modifier.weight(1f).fillMaxWidth()) {
