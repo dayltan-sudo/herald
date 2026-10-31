@@ -1742,17 +1742,18 @@ internal fun visibleThreads(
 /** Whether a row with [status] stays in the list under this filter. */
 internal fun AttentionFilter.keeps(status: RowStatus?): Boolean = when (this) {
     AttentionFilter.All -> true
-    AttentionFilter.Running -> status?.running == true
+    AttentionFilter.Running -> status?.running == true || status?.background?.any == true
     AttentionFilter.NeedsAttention -> status?.needsAttention == true
 }
 
 /** What a row's disc shows, the most pressing first: waiting on the user, running, an unread reply, a draft. */
-internal enum class RowTone { Approval, Question, Running, Reply, Draft, Idle }
+internal enum class RowTone { Approval, Question, Running, Background, Reply, Draft, Idle }
 
 internal fun rowTone(status: RowStatus?, draft: Boolean): RowTone = when {
     status?.waiting == Waiting.Approval || status?.waiting == Waiting.Unknown -> RowTone.Approval
     status?.waiting != null -> RowTone.Question
     status?.running == true -> RowTone.Running
+    status?.background?.any == true -> RowTone.Background
     status?.unread == true -> RowTone.Reply
     draft -> RowTone.Draft
     else -> RowTone.Idle
@@ -1762,6 +1763,7 @@ internal fun rowTone(status: RowStatus?, draft: Boolean): RowTone = when {
 internal fun rowStatusLine(status: RowStatus?, draft: Boolean): String? = listOfNotNull(
     status?.waiting?.label,
     "Running".takeIf { status?.running == true },
+    status?.background?.label?.takeIf { it.isNotEmpty() },
     "New reply".takeIf { status?.unread == true },
     "Draft".takeIf { draft },
 ).joinToString(" · ").ifEmpty { null }
@@ -1793,7 +1795,7 @@ internal fun SessionRow(
     val toneColor = Theme[colors][
         when (tone) {
             RowTone.Approval, RowTone.Question -> warning
-            RowTone.Running, RowTone.Reply -> accentText
+            RowTone.Running, RowTone.Background, RowTone.Reply -> accentText
             RowTone.Draft -> textTertiary
             RowTone.Idle -> textMuted
         },
@@ -1894,7 +1896,7 @@ private val PROJECT_TAG_MAX_WIDTH = 112.dp
 private fun StatusDisc(tone: RowTone, color: Color) {
     val fill = when (tone) {
         RowTone.Approval, RowTone.Question -> Theme[colors][warningSoft]
-        RowTone.Running, RowTone.Reply -> Theme[colors][accentSoft]
+        RowTone.Running, RowTone.Background, RowTone.Reply -> Theme[colors][accentSoft]
         RowTone.Draft, RowTone.Idle -> Theme[colors][surface2]
     }
     Box(Modifier.size(28.dp).background(fill, CircleShape).clearAndSetSemantics { }, contentAlignment = Alignment.Center) {
@@ -1904,6 +1906,7 @@ private fun StatusDisc(tone: RowTone, color: Color) {
                 when (tone) {
                     RowTone.Approval -> Lucide.ShieldAlert
                     RowTone.Question -> Lucide.MessageCircleQuestion
+                    RowTone.Background -> Lucide.SquareTerminal
                     RowTone.Reply -> Lucide.MessageCircle
                     RowTone.Draft -> Lucide.PencilLine
                     else -> Lucide.MessageSquare

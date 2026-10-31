@@ -1,5 +1,6 @@
 package dev.hermeskotlin.ui.sessions
 
+import dev.hermeskotlin.core.chat.BackgroundWork
 import dev.hermeskotlin.core.chat.Waiting
 import dev.hermeskotlin.core.connection.ConnectionState
 import kotlin.test.Test
@@ -28,6 +29,23 @@ class SessionRowStatusTest {
         assertEquals(RowTone.Draft, rowTone(null, draft = true))
         assertEquals(RowTone.Idle, rowTone(null, draft = false))
         assertEquals(RowTone.Idle, rowTone(RowStatus(), draft = false))
+    }
+
+    @Test
+    fun backgroundWorkSitsBetweenRunningAndReply() {
+        val bg = BackgroundWork(processes = 1)
+        assertEquals(RowTone.Background, rowTone(RowStatus(background = bg, unread = true), draft = true))
+        assertEquals(RowTone.Running, rowTone(RowStatus(background = bg, running = true), draft = false))
+        assertEquals("Running · 1 process", rowStatusLine(RowStatus(running = true, background = bg), draft = false))
+        assertEquals("2 subagents · New reply", rowStatusLine(RowStatus(unread = true, background = BackgroundWork(subagents = 2)), draft = false))
+    }
+
+    @Test
+    fun theRunningFilterKeepsChatsWithBackgroundWork() {
+        assertEquals(true, AttentionFilter.Running.keeps(RowStatus(background = BackgroundWork(processes = 1))))
+        assertEquals(false, AttentionFilter.Running.keeps(RowStatus(unread = true)))
+        // Background work alone is not something that needs the user.
+        assertEquals(false, AttentionFilter.NeedsAttention.keeps(RowStatus(background = BackgroundWork(processes = 1))))
     }
 
     @Test

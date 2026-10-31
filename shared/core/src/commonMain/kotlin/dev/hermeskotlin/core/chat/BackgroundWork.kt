@@ -1,5 +1,12 @@
 package dev.hermeskotlin.core.chat
 
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.flow.map
+
 /**
  * What a chat has going on beside its turn: background processes the agent started and subagents still at
  * work. Kept apart from [ChatState.running], which says only that a reply is being written: a dev server can
@@ -20,6 +27,19 @@ data class BackgroundWork(val processes: Int = 0, val subagents: Int = 0) {
         n == 1 -> "1 $one"
         else -> "$n $many"
     }
+}
+
+/** The chat's [BackgroundWork] as it changes: `process.list` asked every [pollMillis], its subagents as they are seen. */
+fun ChatSession.backgroundWorkFlow(pollMillis: Long = 5_000L): Flow<BackgroundWork> {
+    val polled = flow<List<BackgroundProcess>?> {
+        emit(null)
+        while (true) {
+            // A failed read keeps the last answer rather than blinking off.
+            this@backgroundWorkFlow.processes()?.let { emit(it) }
+            delay(pollMillis)
+        }
+    }
+    return combine(polled, state.map { it.subagents }.distinctUntilChanged()) { list, agents -> backgroundWorkOf(list, agents) }
 }
 
 /**

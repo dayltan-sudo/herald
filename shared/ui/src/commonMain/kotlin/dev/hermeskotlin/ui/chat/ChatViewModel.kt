@@ -9,7 +9,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dev.hermeskotlin.core.chat.BackgroundProcess
 import dev.hermeskotlin.core.chat.BackgroundWork
-import dev.hermeskotlin.core.chat.backgroundWorkOf
+import dev.hermeskotlin.core.chat.backgroundWorkFlow
 import dev.hermeskotlin.core.chat.Checkpoint
 import dev.hermeskotlin.core.chat.ChatHost
 import dev.hermeskotlin.core.chat.ChatMessage
@@ -95,8 +95,6 @@ import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flatMapLatest
-import kotlinx.coroutines.flow.flow
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
@@ -295,15 +293,7 @@ class ChatViewModel(
             if (chat == null) {
                 flowOf(BackgroundWork())
             } else {
-                val processes = flow<List<BackgroundProcess>?> {
-                    emit(null)
-                    while (true) {
-                        // A failed read keeps the last answer rather than blinking the badge off.
-                        chat.processes()?.let { emit(it) }
-                        delay(BACKGROUND_POLL_MILLIS)
-                    }
-                }
-                combine(processes, chat.state.map { it.subagents }.distinctUntilChanged()) { list, agents -> backgroundWorkOf(list, agents) }
+                chat.backgroundWorkFlow(BACKGROUND_POLL_MILLIS)
             }
         }
         .distinctUntilChanged()

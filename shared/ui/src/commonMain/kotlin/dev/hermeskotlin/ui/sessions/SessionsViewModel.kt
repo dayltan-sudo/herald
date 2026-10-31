@@ -7,6 +7,7 @@ import androidx.lifecycle.viewModelScope
 import dev.hermeskotlin.core.auth.AuthApi
 import dev.hermeskotlin.core.auth.AuthUser
 import dev.hermeskotlin.core.cache.OfflineCache
+import dev.hermeskotlin.core.chat.BackgroundWork
 import dev.hermeskotlin.core.chat.AttentionTracker
 import dev.hermeskotlin.core.chat.DraftStore
 import dev.hermeskotlin.core.chat.LastChatStore
@@ -125,7 +126,13 @@ enum class AttentionFilter(val label: String) {
 }
 
 /** What a row says about its chat besides the title, in words. [running]: a turn is going right now. */
-data class RowStatus(val waiting: Waiting? = null, val unread: Boolean = false, val running: Boolean = false) {
+data class RowStatus(
+    val waiting: Waiting? = null,
+    val unread: Boolean = false,
+    val running: Boolean = false,
+    /** Processes and subagents going beside the chat's turns, as last seen. */
+    val background: BackgroundWork = BackgroundWork(),
+) {
     val needsAttention: Boolean get() = waiting != null || unread
 }
 
@@ -189,6 +196,7 @@ class SessionsViewModel(
 
     private val waiting = attention.waiting
     private val running = attention.running
+    private val background = attention.background
     private val requestsByChat = attention.requestsByChat
 
     fun setAttentionFilter(filter: AttentionFilter) {
@@ -229,10 +237,10 @@ class SessionsViewModel(
      */
     val statuses: StateFlow<Map<String, RowStatus>> = visible.flatMapLatest { shown ->
         if (!shown) return@flatMapLatest emptyFlow()
-        combine(_state, waiting, seen, running) { state, waiting, seen, running ->
+        combine(_state, waiting, seen, running, background) { state, waiting, seen, running, background ->
             (state.sessions + state.searchResults.orEmpty() + state.projectSessions.orEmpty()).mapNotNull { session ->
-                RowStatus(waiting[session.id], seen?.isUnread(session) == true, running[session.id] == true)
-                    .takeIf { it.needsAttention || it.running }?.let { session.id to it }
+                RowStatus(waiting[session.id], seen?.isUnread(session) == true, running[session.id] == true, background[session.id] ?: BackgroundWork())
+                    .takeIf { it.needsAttention || it.running || it.background.any }?.let { session.id to it }
             }.toMap()
         }
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(STOP_AFTER_MS), emptyMap())
