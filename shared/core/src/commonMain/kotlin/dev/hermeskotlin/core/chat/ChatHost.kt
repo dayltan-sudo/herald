@@ -28,6 +28,8 @@ class ChatHost(
     private val cache: OfflineCache? = null,
     /** Where the instruction a new chat starts with comes from (see [startInstruction]). */
     private val settings: SettingsStore? = null,
+    /** The last context window seen per chat, shown until the gateway has a fresh one. */
+    private val contexts: ContextStore? = null,
 ) {
     /** What a new chat started on this device tells the agent first: the setting, read when the chat is created. */
     val startInstruction: () -> String? = { settings?.startInstruction() }
@@ -73,7 +75,7 @@ class ChatHost(
         this.profile = profile
         sessionScope = childScope
         val cards = storedSessionId?.let { sideTasks.remove(Triple(gateway, profile, it)) }.orEmpty()
-        return ChatSession(gateway, storedSessionId, title, connection, sessions, childScope, profile, risks, cwd = cwd, cache = cache, sideTasks = cards, startInstruction = startInstruction)
+        return ChatSession(gateway, storedSessionId, title, connection, sessions, childScope, profile, risks, cwd = cwd, cache = cache, sideTasks = cards, startInstruction = startInstruction, contexts = contexts)
             .also { it.start() }
             .also { _session.value = it }
     }

@@ -24,6 +24,8 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.withTimeout
 import kotlinx.coroutines.withTimeoutOrNull
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.map
 import dev.hermeskotlin.core.models.ReasoningEffort
 import kotlin.time.Clock
 import kotlin.time.Duration.Companion.milliseconds
@@ -81,6 +83,8 @@ class ChatSession(
     sideTasks: List<ChatMessage.Command> = emptyList(),
     /** For a new chat: what it tells the agent first, out of sight (see `putStartInstruction`); read when it's created. */
     private val startInstruction: () -> String? = { null },
+    /** The context window last seen per chat, put back when the gateway has none to give (see [ContextStore]). */
+    private val contexts: ContextStore? = null,
 ) {
     private fun nowSeconds(): Double = clock.now().toEpochMilliseconds() / 1000.0
 
@@ -163,9 +167,31 @@ class ChatSession(
             scope.launch { followConnection() },
             scope.launch { followEvents() },
             scope.launch { followServerRequests() },
+            scope.launch { keepContext() },
         ) + _state.value.messages.mapNotNull { card ->
             (card as? ChatMessage.Command)?.takeIf { it.running && it.isBackground }?.taskId?.let { scope.launch { followBackgroundTask(it) } }
         }
+    }
+
+    /**
+     * Keeps the context window across a gap: puts the last one seen for this chat back when the gateway reports
+     * none (an agent rebuilt after sitting idle), and writes each new figure down.
+     */
+    private suspend fun keepContext() {
+        val contexts = contexts ?: return
+        var seededFor: String? = null
+        _state
+            .map { Triple(it.storedSessionId, it.usage, it.usage?.hasContext == true) }
+            .distinctUntilChanged { a, b -> a.first == b.first && a.second?.contextUsed == b.second?.contextUsed && a.second?.contextPercent == b.second?.contextPercent && a.second?.contextMax == b.second?.contextMax }
+            .collect { (storedId, usage, known) ->
+                val key = ContextStore.keyOf(gateway.value, profile, storedId ?: return@collect)
+                if (known) {
+                    contexts.remember(key, usage ?: return@collect)
+                } else if (seededFor != key) {
+                    seededFor = key
+                    contexts.recall(key)?.let { saved -> _state.update { it.copy(usage = (it.usage ?: SessionUsage()).withContextOf(saved)) } }
+                }
+            }
     }
 
     fun stop() {
