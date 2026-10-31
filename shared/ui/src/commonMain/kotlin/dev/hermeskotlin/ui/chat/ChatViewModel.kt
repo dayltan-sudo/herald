@@ -8,6 +8,8 @@ import androidx.compose.foundation.text.input.setTextAndPlaceCursorAtEnd
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dev.hermeskotlin.core.chat.BackgroundProcess
+import dev.hermeskotlin.core.chat.BackgroundWork
+import dev.hermeskotlin.core.chat.backgroundWorkOf
 import dev.hermeskotlin.core.chat.Checkpoint
 import dev.hermeskotlin.core.chat.ChatHost
 import dev.hermeskotlin.core.chat.ChatMessage
@@ -93,6 +95,8 @@ import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
@@ -280,6 +284,30 @@ class ChatViewModel(
     val state: StateFlow<ChatState> = session
         .flatMapLatest { it?.state ?: flowOf(ChatState()) }
         .stateIn(viewModelScope, SharingStarted.Eagerly, ChatState())
+
+    /**
+     * What the open chat has going beside its turn. `process.list` is asked every few seconds while the chat
+     * is on screen (nothing pushes a change), so a process outlives the turn that started it in view.
+     */
+    @OptIn(ExperimentalCoroutinesApi::class)
+    val background: StateFlow<BackgroundWork> = session
+        .flatMapLatest { chat ->
+            if (chat == null) {
+                flowOf(BackgroundWork())
+            } else {
+                val processes = flow<List<BackgroundProcess>?> {
+                    emit(null)
+                    while (true) {
+                        // A failed read keeps the last answer rather than blinking the badge off.
+                        chat.processes()?.let { emit(it) }
+                        delay(BACKGROUND_POLL_MILLIS)
+                    }
+                }
+                combine(processes, chat.state.map { it.subagents }.distinctUntilChanged()) { list, agents -> backgroundWorkOf(list, agents) }
+            }
+        }
+        .distinctUntilChanged()
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), BackgroundWork())
 
     private val _picker = MutableStateFlow(ModelPickerState())
     private var loadJob: Job? = null
@@ -1273,6 +1301,9 @@ class ChatViewModel(
     fun showTitle(title: String?) = session.value?.showTitle(title)
 
     private companion object {
+        /** How often the open chat is asked for its background processes. */
+        const val BACKGROUND_POLL_MILLIS = 5_000L
+
         /** Full-size gateway photos are a few hundred KB each; keep a screenful or two. */
         const val MAX_CACHED_MEDIA = 24
 

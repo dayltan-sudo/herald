@@ -8,6 +8,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.text.AnnotatedString
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import dev.hermeskotlin.core.chat.BackgroundWork
 import dev.hermeskotlin.core.chat.ChatMessage
 import dev.hermeskotlin.core.sessions.SessionSummary
 import dev.hermeskotlin.core.threads.ChatThread
@@ -32,6 +33,8 @@ internal fun ChatMenu(
     onDeleted: () -> Unit,
     onUsage: () -> Unit,
     onProcesses: () -> Unit,
+    /** What runs beside the turn, said on the Background processes row. */
+    backgroundWork: BackgroundWork = BackgroundWork(),
     onCheckpoints: () -> Unit,
     /** The chat's goal and loops sheet; null when the chat has no goal, loop or heartbeat. */
     onControl: (() -> Unit)? = null,
@@ -71,6 +74,7 @@ internal fun ChatMenu(
         onCopyId = { clipboard.setText(AnnotatedString(it.id)) },
         onUsage = { onUsage() },
         onProcesses = { onProcesses() },
+        processesLabel = if (backgroundWork.processes > 0) "Background processes · ${backgroundWork.processes} running" else "Background processes",
         onCheckpoints = { onCheckpoints() },
         onControl = onControl?.let { open -> { _: SessionSummary -> open() } },
         onStartFresh = onStartFresh?.let { start -> { _: SessionSummary -> start() } }

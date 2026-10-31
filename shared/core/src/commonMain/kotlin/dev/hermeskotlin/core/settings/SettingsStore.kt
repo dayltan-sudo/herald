@@ -82,6 +82,8 @@ data class AppSettings(
     val showUsage: Boolean = true,
     /** The strip above a chat with its context window, model and what the agent is doing. */
     val showContextBar: Boolean = true,
+    /** A dot on the chat's options button while background processes or subagents are running. */
+    val showBackgroundWork: Boolean = true,
     /** The time under each prompt and finished reply. */
     val showTimestamps: Boolean = true,
     /** Long lines in code blocks wrap; off, a block scrolls sideways. */

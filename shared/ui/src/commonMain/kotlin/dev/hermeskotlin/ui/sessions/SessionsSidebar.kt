@@ -2166,6 +2166,8 @@ internal fun SessionActionsSheet(
     onCopyId: ((SessionSummary) -> Unit)? = null,
     onUsage: ((SessionSummary) -> Unit)? = null,
     onProcesses: ((SessionSummary) -> Unit)? = null,
+    /** The Background processes row's text; it says how many run when the chat knows. */
+    processesLabel: String = "Background processes",
     onCheckpoints: ((SessionSummary) -> Unit)? = null,
     /** The chat's goal and loops sheet; null when the chat has no goal, loop or heartbeat. */
     onControl: ((SessionSummary) -> Unit)? = null,
@@ -2191,7 +2193,7 @@ internal fun SessionActionsSheet(
         onMakeThread?.let { SheetAction("Make thread", Lucide.Hash, act(it)) }
         onTogglePinned?.let { SheetAction(if (s.pinned) "Unpin" else "Pin", if (s.pinned) Lucide.PinOff else Lucide.Pin, act(it)) }
         onUsage?.let { SheetAction("Usage and cost", Lucide.Gauge, act(it)) }
-        onProcesses?.let { SheetAction("Background processes", Lucide.SquareTerminal, act(it)) }
+        onProcesses?.let { SheetAction(processesLabel, Lucide.SquareTerminal, act(it)) }
         onCheckpoints?.let { SheetAction("Checkpoints", Lucide.History, act(it)) }
         onControl?.let { SheetAction("Goal and loops", Lucide.Target, act(it)) }
         onExport?.let { SheetAction("Export as Markdown", Lucide.Download, act(it)) }

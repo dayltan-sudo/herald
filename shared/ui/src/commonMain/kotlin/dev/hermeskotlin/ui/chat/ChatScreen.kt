@@ -12,6 +12,8 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.offset
+import dev.hermeskotlin.core.chat.BackgroundWork
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.runtime.mutableIntStateOf
@@ -456,6 +458,7 @@ fun ChatScreen(
             faces.find(target.bot?.name)?.let { bot -> { BotAvatar(bot, faces.picture(bot), size = 22.dp) } }
         },
         state = state,
+        backgroundWork = viewModel.background.collectAsStateWithLifecycle().value.takeIf { LocalAppSettings.current.showBackgroundWork } ?: BackgroundWork(),
         picker = picker,
         connected = connected,
         connectionLabel = connectionLabel(connection),
@@ -594,6 +597,8 @@ internal fun ChatView(
     /** Drawn beside the title, e.g. the face of the bot whose chat this is. */
     titleFace: (@Composable () -> Unit)? = null,
     state: ChatState,
+    /** Processes and subagents going beside the turn; shown as a dot on the options button. */
+    backgroundWork: BackgroundWork = BackgroundWork(),
     picker: ModelPickerState,
     connected: Boolean,
     /** Which way the link is down, shown under the title while not [connected]. */
@@ -694,6 +699,7 @@ internal fun ChatView(
                 onOpenSidebar = onOpenSidebar,
                 onNewChat = onNewChat,
                 onOpenMenu = onOpenMenu,
+                menuBackground = backgroundWork,
                 sessionsBadge = sessionsBadge,
                 onNextChat = onNextChat,
             )
@@ -1110,6 +1116,8 @@ internal fun TopBar(
     onOpenSidebar: () -> Unit,
     onNewChat: (() -> Unit)?,
     onOpenMenu: (() -> Unit)?,
+    /** What runs beside the turn: marks the options button. */
+    menuBackground: BackgroundWork = BackgroundWork(),
     /** In place of New chat and the menu, e.g. a room's own buttons. */
     trailing: (@Composable () -> Unit)? = null,
     /** What the Sessions button says about the other chats. */
@@ -1148,7 +1156,13 @@ internal fun TopBar(
                 trailing()
             } else {
                 BarButton(Lucide.SquarePen, "New chat", onClick = { onNewChat?.invoke() }, enabled = onNewChat != null)
-                BarButton(Lucide.Ellipsis, "Chat options", onClick = { onOpenMenu?.invoke() }, enabled = onOpenMenu != null)
+                BarButton(
+                    Lucide.Ellipsis,
+                    if (menuBackground.any) "Chat options, ${menuBackground.label} running" else "Chat options",
+                    onClick = { onOpenMenu?.invoke() },
+                    enabled = onOpenMenu != null,
+                    badge = menuBackground.any,
+                )
             }
         }
     }
@@ -1185,6 +1199,8 @@ internal fun BarButton(
     onClick: () -> Unit,
     enabled: Boolean = true,
     tint: Color = Theme[colors][textSecondary],
+    /** A dot on the icon's corner: something is going on behind this button. */
+    badge: Boolean = false,
 ) {
     UnstyledButton(
         onClick = onClick,
@@ -1192,7 +1208,19 @@ internal fun BarButton(
         modifier = Modifier.size(MinTouchTarget).clip(RoundedCornerShape(Theme[radii][radiusSmall])).alpha(if (enabled) 1f else 0.35f),
         indication = rememberColoredIndication(Theme[colors][textColor]),
     ) {
-        UnstyledIcon(icon, contentDescription = contentDescription, tint = tint, modifier = Modifier.size(19.dp))
+        Box(Modifier.size(19.dp)) {
+            UnstyledIcon(icon, contentDescription = contentDescription, tint = tint, modifier = Modifier.size(19.dp))
+            if (badge) {
+                Box(
+                    Modifier
+                        .align(Alignment.TopEnd)
+                        .offset(x = 3.dp, y = (-3).dp)
+                        .size(9.dp)
+                        .clip(CircleShape)
+                        .background(Theme[colors][accent]),
+                )
+            }
+        }
     }
 }
 

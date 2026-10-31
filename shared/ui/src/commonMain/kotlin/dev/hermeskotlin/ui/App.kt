@@ -538,6 +538,7 @@ private fun Home(route: Route.Chat, app: AppViewModel, onOpenGateways: () -> Uni
         onDeleted = app::newChat,
         onUsage = chat::openUsage,
         onProcesses = chat::openProcesses,
+        backgroundWork = chat.background.collectAsStateWithLifecycle().value,
         onCheckpoints = chat::openCheckpoints,
         // Only a chat carrying a goal, loop or heartbeat gets the row.
         onControl = chat::openControl.takeIf { chatState.control != null },
