@@ -74,7 +74,7 @@ internal fun ChatMenu(
         onCopyId = { clipboard.setText(AnnotatedString(it.id)) },
         onUsage = { onUsage() },
         onProcesses = { onProcesses() },
-        processesLabel = if (backgroundWork.processes > 0) "Background processes · ${backgroundWork.processes} running" else "Background processes",
+        processesLabel = if (backgroundWork.any) "Background processes · ${backgroundWork.label}" else "Background processes",
         onCheckpoints = { onCheckpoints() },
         onControl = onControl?.let { open -> { _: SessionSummary -> open() } },
         onStartFresh = onStartFresh?.let { start -> { _: SessionSummary -> start() } }

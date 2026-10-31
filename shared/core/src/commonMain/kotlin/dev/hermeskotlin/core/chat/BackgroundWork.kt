@@ -32,7 +32,7 @@ data class BackgroundWork(val processes: Int = 0, val subagents: Int = 0) {
 /** The chat's [BackgroundWork] as it changes: `process.list` asked every [pollMillis], its subagents as they are seen. */
 fun ChatSession.backgroundWorkFlow(pollMillis: Long = 5_000L): Flow<BackgroundWork> {
     val polled = flow<List<BackgroundProcess>?> {
-        emit(null)
+        // No placeholder first: not yet asked is not the same as none running, and would blink an entry off.
         while (true) {
             // A failed read keeps the last answer rather than blinking off.
             this@backgroundWorkFlow.processes()?.let { emit(it) }
