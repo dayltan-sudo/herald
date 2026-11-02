@@ -214,6 +214,8 @@ import dev.hermeskotlin.ui.components.relativeTime
 import dev.hermeskotlin.ui.components.savedCopyLabel
 import dev.hermeskotlin.ui.update.UpdateBanner
 import kotlinx.coroutines.delay
+import dev.hermeskotlin.core.chat.BackgroundWork
+import dev.hermeskotlin.ui.LocalAppSettings
 import dev.hermeskotlin.core.rooms.Room
 import dev.hermeskotlin.core.plugins.DashboardPlugin
 import dev.hermeskotlin.core.rooms.DesktopRoom
@@ -295,7 +297,18 @@ fun SessionsSidebar(
     val connection by viewModel.connectionState.collectAsStateWithLifecycle()
     val user by viewModel.user.collectAsStateWithLifecycle()
     val roster by viewModel.roster.collectAsStateWithLifecycle()
-    val statuses by viewModel.statuses.collectAsStateWithLifecycle()
+    val liveStatuses by viewModel.statuses.collectAsStateWithLifecycle()
+    // With the background switch off, rows say nothing of background work (and the Running filter is turns only).
+    val showBackground = LocalAppSettings.current.showBackgroundWork
+    val statuses = remember(liveStatuses, showBackground) {
+        if (showBackground) {
+            liveStatuses
+        } else {
+            liveStatuses.mapNotNull { (id, status) ->
+                status.copy(background = BackgroundWork()).takeIf { it.needsAttention || it.running }?.let { id to it }
+            }.toMap()
+        }
+    }
     val attentionFilter by viewModel.attentionFilter.collectAsStateWithLifecycle()
     val drafts by viewModel.draftChats.collectAsStateWithLifecycle()
     val settingsStore = koinInject<SettingsStore>()

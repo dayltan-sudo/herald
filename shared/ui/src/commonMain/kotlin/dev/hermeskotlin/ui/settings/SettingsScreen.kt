@@ -481,8 +481,8 @@ internal fun SettingsView(
                     )
                     Divider()
                     SwitchRow(
-                        title = "Background work badge",
-                        detail = "A dot on the chat's options button while background processes or subagents are running.",
+                        title = "Background work indicators",
+                        detail = "Show running background processes and subagents: a dot on the chat's options button, a count in its menu, and a mark on its row in the chat list.",
                         checked = settings.showBackgroundWork,
                         onCheckedChange = { on -> onUpdate { it.copy(showBackgroundWork = on) } },
                         icon = Lucide.SquareTerminal,
