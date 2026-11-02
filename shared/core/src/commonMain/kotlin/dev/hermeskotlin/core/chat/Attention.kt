@@ -6,10 +6,16 @@ import dev.hermeskotlin.core.sessions.LiveStatus
 import io.ktor.util.date.getTimeMillis
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.emptyFlow
+import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.scan
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.stateIn
@@ -55,7 +61,7 @@ private data class Turn(val running: Boolean, val atMillis: Long)
 @OptIn(ExperimentalCoroutinesApi::class)
 class AttentionTracker(
     connection: GatewayConnection,
-    host: ChatHost,
+    private val host: ChatHost,
     active: ActiveSessions,
     scope: CoroutineScope,
     private val clock: () -> Long = { getTimeMillis() },
@@ -63,6 +69,46 @@ class AttentionTracker(
 
     /** Runtime session id to stored session id, for every chat opened while the app runs. */
     private val links = MutableStateFlow<Map<String, String>>(emptyMap())
+
+    /**
+     * The background work of each chat this phone has had open, by stored session id, as last seen: only the
+     * open chat is asked (`process.list` needs its runtime session), so another chat's entry is the one it
+     * had on leaving, and goes after [BACKGROUND_MAX_AGE_MS] rather than claim a process still runs.
+     */
+    private val seenBackground: StateFlow<Map<String, Pair<BackgroundWork, Long>>> = host.session
+        .flatMapLatest { chat ->
+            if (chat == null) {
+                emptyFlow()
+            } else {
+                combine(chat.state.map { it.storedSessionId }.distinctUntilChanged(), chat.backgroundWorkFlow()) { id, work -> id to work }
+            }
+        }
+        .scan(emptyMap<String, Pair<BackgroundWork, Long>>()) { all, (id, work) ->
+            when {
+                id == null -> all
+                work.any -> all + (id to (work to clock()))
+                else -> all - id
+            }
+        }
+        .stateIn(scope, SharingStarted.Eagerly, emptyMap())
+
+    /** Each minute while there is anything to expire, so an entry nobody refreshes runs out. Idle, it does not tick. */
+    val background: StateFlow<Map<String, BackgroundWork>> = seenBackground
+        .flatMapLatest { seen ->
+            if (seen.isEmpty()) {
+                flowOf(emptyMap())
+            } else {
+                flow {
+                    while (true) {
+                        val now = clock()
+                        emit(seen.filterValues { (_, at) -> now - at < BACKGROUND_MAX_AGE_MS }.mapValues { it.value.first })
+                        delay(60_000L)
+                    }
+                }
+            }
+        }
+        .distinctUntilChanged()
+        .stateIn(scope, SharingStarted.Eagerly, emptyMap())
 
     /** Open requests by id. */
     private val requests = MutableStateFlow<Map<String, OpenRequest>>(emptyMap())
@@ -190,5 +236,10 @@ class AttentionTracker(
                 shown = now
             }
         }
+    }
+
+    private companion object {
+        /** How long a chat's background work, last seen when the user left it, is still believed. */
+        const val BACKGROUND_MAX_AGE_MS = 10 * 60 * 1000L
     }
 }

@@ -145,6 +145,18 @@ class SettingsStoreTest {
     }
 
     @Test
+    fun theBackgroundWorkBadgeIsOnUntilTurnedOffAndStaysOff() = runTest {
+        assertEquals(true, AppSettings().showBackgroundWork)
+        val disk = InMemoryKeyValueStore().apply { put("settings.v1", """{"theme":"Dark"}""") }
+        val first = SettingsStore(disk, backgroundScope)
+        assertEquals(true, first.settings.filterNotNull().first().showBackgroundWork)
+
+        first.update { it.copy(showBackgroundWork = false) }
+        advanceUntilIdle()
+        assertEquals(false, SettingsStore(disk, backgroundScope).settings.filterNotNull().first().showBackgroundWork)
+    }
+
+    @Test
     fun linkPreviewsRequireOptInAndRememberTheChoice() = runTest {
         assertEquals(false, AppSettings().showLinkPreviews)
         val disk = InMemoryKeyValueStore().apply { put("settings.v1", """{"theme":"Dark"}""") }

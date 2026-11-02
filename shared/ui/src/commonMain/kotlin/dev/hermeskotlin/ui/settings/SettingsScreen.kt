@@ -96,6 +96,7 @@ import com.composables.icons.lucide.MessagesSquare
 import com.composables.icons.lucide.Moon
 import com.composables.icons.lucide.RefreshCw
 import com.composables.icons.lucide.Send
+import com.composables.icons.lucide.SquareTerminal
 import com.composables.icons.lucide.ShieldAlert
 import com.composables.icons.lucide.Smartphone
 import com.composables.icons.lucide.Sun
@@ -477,6 +478,14 @@ internal fun SettingsView(
                         checked = settings.showContextBar,
                         onCheckedChange = { on -> onUpdate { it.copy(showContextBar = on) } },
                         icon = Lucide.Activity,
+                    )
+                    Divider()
+                    SwitchRow(
+                        title = "Background work indicators",
+                        detail = "Show running background processes and subagents: a dot on the chat's options button, a count in its menu, and a mark on its row in the chat list.",
+                        checked = settings.showBackgroundWork,
+                        onCheckedChange = { on -> onUpdate { it.copy(showBackgroundWork = on) } },
+                        icon = Lucide.SquareTerminal,
                     )
                     Divider()
                     SwitchRow(

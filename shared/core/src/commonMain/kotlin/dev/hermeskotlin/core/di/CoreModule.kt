@@ -16,6 +16,7 @@ import dev.hermeskotlin.core.sessions.ActiveSessions
 import dev.hermeskotlin.core.sessions.SeenStore
 import io.ktor.util.date.getTimeMillis
 import dev.hermeskotlin.core.chat.LastChatStore
+import dev.hermeskotlin.core.chat.ContextStore
 import dev.hermeskotlin.core.chat.ToolRiskStore
 import dev.hermeskotlin.core.capabilities.CapabilitiesApi
 import dev.hermeskotlin.core.capabilities.SkillsHubApi
@@ -113,8 +114,9 @@ val coreModule = module {
         )
     }
     single { ToolRiskStore(get()) }
+    single { ContextStore(get()) }
     single { OfflineCache(get<OfflineDatabase>().dao(), get()) { getTimeMillis() } }
-    single { ChatHost(get(), get(), get(), get(), get(), get()) }
+    single { ChatHost(get(), get(), get(), get(), get(), get(), get()) }
     single { ActiveSessions(get(), get()) }
     single(createdAtStart = true) { AttentionTracker(get(), get(), get(), get()) }
     single(createdAtStart = true) { SessionWatcher(get(), get(), get(), get(), get()) }

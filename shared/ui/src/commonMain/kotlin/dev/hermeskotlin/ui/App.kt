@@ -60,6 +60,7 @@ import dev.hermeskotlin.ui.chat.ProvideReplySpeaker
 import dev.hermeskotlin.ui.chat.replySpeaker
 import dev.hermeskotlin.ui.sessions.CapabilitiesPage
 import dev.hermeskotlin.ui.sessions.ConfigPage
+import dev.hermeskotlin.core.chat.BackgroundWork
 import dev.hermeskotlin.core.chat.ChatState
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.safeDrawing
@@ -538,6 +539,7 @@ private fun Home(route: Route.Chat, app: AppViewModel, onOpenGateways: () -> Uni
         onDeleted = app::newChat,
         onUsage = chat::openUsage,
         onProcesses = chat::openProcesses,
+        backgroundWork = chat.background.collectAsStateWithLifecycle().value.takeIf { LocalAppSettings.current.showBackgroundWork } ?: BackgroundWork(),
         onCheckpoints = chat::openCheckpoints,
         // Only a chat carrying a goal, loop or heartbeat gets the row.
         onControl = chat::openControl.takeIf { chatState.control != null },

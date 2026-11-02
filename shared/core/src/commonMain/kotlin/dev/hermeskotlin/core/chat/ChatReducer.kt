@@ -23,7 +23,7 @@ fun ChatState.reduce(event: GatewayEvent, now: Double? = null): ChatState {
             // No totals yet means the agent isn't built, and a new one counts from zero.
             turnStartUsage = turnStartUsage.takeIf { running } ?: usage ?: SessionUsage(),
         )
-        "session.usage" -> copy(usage = SessionUsage.parse(payload?.get("usage") as? JsonObject) ?: usage)
+        "session.usage" -> copy(usage = SessionUsage.parse(payload?.get("usage") as? JsonObject)?.withContextOf(usage) ?: usage)
         "message.delta" -> appendText(payload.string("text"))
         "message.interim" ->
             // Commentary next to tool calls; when already streamed it is in the text already.
@@ -192,7 +192,7 @@ internal fun ChatState.withInfo(info: JsonObject?): ChatState {
         reasoningEffort = info.string("reasoning_effort")?.let { it.ifBlank { null } } ?: reasoningEffort.takeIf { "reasoning_effort" !in info },
         fast = info.boolean("fast") ?: fast,
         yolo = info.boolean("yolo") ?: yolo,
-        usage = SessionUsage.parse(info["usage"] as? JsonObject) ?: usage,
+        usage = SessionUsage.parse(info["usage"] as? JsonObject)?.withContextOf(usage) ?: usage,
     )
 }
 
@@ -259,7 +259,7 @@ private fun ChatState.endTurn(messages: List<ChatMessage>, finalUsage: SessionUs
     messages = messages,
     correctedReplyKey = null,
     todosLive = false,
-    usage = finalUsage ?: usage,
+    usage = finalUsage?.withContextOf(usage) ?: usage,
     turnStartUsage = null,
 )
 

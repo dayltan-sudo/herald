@@ -18,6 +18,21 @@ data class SessionUsage(
     val contextPercent: Int? = null,
     val cacheHitPercent: Int? = null,
 ) {
+    /** The gateway reported how full the context window is. A freshly built agent has not made a call yet and reports none. */
+    val hasContext: Boolean get() = contextUsed != null || contextPercent != null
+
+    /**
+     * These totals with the context window of [earlier] when this snapshot carries none. A rebuilt agent
+     * (the gateway lets idle ones go) counts tokens from zero and says nothing of context until its first
+     * call; the window itself is unchanged by that, so the last figure stands rather than the bar going blank.
+     */
+    fun withContextOf(earlier: SessionUsage?): SessionUsage =
+        if (hasContext || earlier == null || !earlier.hasContext) {
+            this
+        } else {
+            copy(contextUsed = earlier.contextUsed, contextMax = earlier.contextMax, contextPercent = earlier.contextPercent)
+        }
+
     /** What one turn used: these totals minus the ones it started from; null when the agent was rebuilt in between. */
     operator fun minus(start: SessionUsage): TurnUsage? {
         val turn = TurnUsage(input - start.input, output - start.output, reasoning - start.reasoning, calls - start.calls)

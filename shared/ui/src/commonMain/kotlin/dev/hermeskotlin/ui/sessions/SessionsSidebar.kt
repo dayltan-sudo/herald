@@ -214,6 +214,8 @@ import dev.hermeskotlin.ui.components.relativeTime
 import dev.hermeskotlin.ui.components.savedCopyLabel
 import dev.hermeskotlin.ui.update.UpdateBanner
 import kotlinx.coroutines.delay
+import dev.hermeskotlin.core.chat.BackgroundWork
+import dev.hermeskotlin.ui.LocalAppSettings
 import dev.hermeskotlin.core.rooms.Room
 import dev.hermeskotlin.core.plugins.DashboardPlugin
 import dev.hermeskotlin.core.rooms.DesktopRoom
@@ -295,7 +297,18 @@ fun SessionsSidebar(
     val connection by viewModel.connectionState.collectAsStateWithLifecycle()
     val user by viewModel.user.collectAsStateWithLifecycle()
     val roster by viewModel.roster.collectAsStateWithLifecycle()
-    val statuses by viewModel.statuses.collectAsStateWithLifecycle()
+    val liveStatuses by viewModel.statuses.collectAsStateWithLifecycle()
+    // With the background switch off, rows say nothing of background work (and the Running filter is turns only).
+    val showBackground = LocalAppSettings.current.showBackgroundWork
+    val statuses = remember(liveStatuses, showBackground) {
+        if (showBackground) {
+            liveStatuses
+        } else {
+            liveStatuses.mapNotNull { (id, status) ->
+                status.copy(background = BackgroundWork()).takeIf { it.needsAttention || it.running }?.let { id to it }
+            }.toMap()
+        }
+    }
     val attentionFilter by viewModel.attentionFilter.collectAsStateWithLifecycle()
     val drafts by viewModel.draftChats.collectAsStateWithLifecycle()
     val settingsStore = koinInject<SettingsStore>()
@@ -1742,17 +1755,18 @@ internal fun visibleThreads(
 /** Whether a row with [status] stays in the list under this filter. */
 internal fun AttentionFilter.keeps(status: RowStatus?): Boolean = when (this) {
     AttentionFilter.All -> true
-    AttentionFilter.Running -> status?.running == true
+    AttentionFilter.Running -> status?.running == true || status?.background?.any == true
     AttentionFilter.NeedsAttention -> status?.needsAttention == true
 }
 
 /** What a row's disc shows, the most pressing first: waiting on the user, running, an unread reply, a draft. */
-internal enum class RowTone { Approval, Question, Running, Reply, Draft, Idle }
+internal enum class RowTone { Approval, Question, Running, Background, Reply, Draft, Idle }
 
 internal fun rowTone(status: RowStatus?, draft: Boolean): RowTone = when {
     status?.waiting == Waiting.Approval || status?.waiting == Waiting.Unknown -> RowTone.Approval
     status?.waiting != null -> RowTone.Question
     status?.running == true -> RowTone.Running
+    status?.background?.any == true -> RowTone.Background
     status?.unread == true -> RowTone.Reply
     draft -> RowTone.Draft
     else -> RowTone.Idle
@@ -1762,6 +1776,7 @@ internal fun rowTone(status: RowStatus?, draft: Boolean): RowTone = when {
 internal fun rowStatusLine(status: RowStatus?, draft: Boolean): String? = listOfNotNull(
     status?.waiting?.label,
     "Running".takeIf { status?.running == true },
+    status?.background?.label?.takeIf { it.isNotEmpty() },
     "New reply".takeIf { status?.unread == true },
     "Draft".takeIf { draft },
 ).joinToString(" · ").ifEmpty { null }
@@ -1793,7 +1808,7 @@ internal fun SessionRow(
     val toneColor = Theme[colors][
         when (tone) {
             RowTone.Approval, RowTone.Question -> warning
-            RowTone.Running, RowTone.Reply -> accentText
+            RowTone.Running, RowTone.Background, RowTone.Reply -> accentText
             RowTone.Draft -> textTertiary
             RowTone.Idle -> textMuted
         },
@@ -1894,7 +1909,7 @@ private val PROJECT_TAG_MAX_WIDTH = 112.dp
 private fun StatusDisc(tone: RowTone, color: Color) {
     val fill = when (tone) {
         RowTone.Approval, RowTone.Question -> Theme[colors][warningSoft]
-        RowTone.Running, RowTone.Reply -> Theme[colors][accentSoft]
+        RowTone.Running, RowTone.Background, RowTone.Reply -> Theme[colors][accentSoft]
         RowTone.Draft, RowTone.Idle -> Theme[colors][surface2]
     }
     Box(Modifier.size(28.dp).background(fill, CircleShape).clearAndSetSemantics { }, contentAlignment = Alignment.Center) {
@@ -1904,6 +1919,7 @@ private fun StatusDisc(tone: RowTone, color: Color) {
                 when (tone) {
                     RowTone.Approval -> Lucide.ShieldAlert
                     RowTone.Question -> Lucide.MessageCircleQuestion
+                    RowTone.Background -> Lucide.SquareTerminal
                     RowTone.Reply -> Lucide.MessageCircle
                     RowTone.Draft -> Lucide.PencilLine
                     else -> Lucide.MessageSquare
@@ -2166,6 +2182,8 @@ internal fun SessionActionsSheet(
     onCopyId: ((SessionSummary) -> Unit)? = null,
     onUsage: ((SessionSummary) -> Unit)? = null,
     onProcesses: ((SessionSummary) -> Unit)? = null,
+    /** The Background processes row's text; it says how many run when the chat knows. */
+    processesLabel: String = "Background processes",
     onCheckpoints: ((SessionSummary) -> Unit)? = null,
     /** The chat's goal and loops sheet; null when the chat has no goal, loop or heartbeat. */
     onControl: ((SessionSummary) -> Unit)? = null,
@@ -2191,7 +2209,7 @@ internal fun SessionActionsSheet(
         onMakeThread?.let { SheetAction("Make thread", Lucide.Hash, act(it)) }
         onTogglePinned?.let { SheetAction(if (s.pinned) "Unpin" else "Pin", if (s.pinned) Lucide.PinOff else Lucide.Pin, act(it)) }
         onUsage?.let { SheetAction("Usage and cost", Lucide.Gauge, act(it)) }
-        onProcesses?.let { SheetAction("Background processes", Lucide.SquareTerminal, act(it)) }
+        onProcesses?.let { SheetAction(processesLabel, Lucide.SquareTerminal, act(it)) }
         onCheckpoints?.let { SheetAction("Checkpoints", Lucide.History, act(it)) }
         onControl?.let { SheetAction("Goal and loops", Lucide.Target, act(it)) }
         onExport?.let { SheetAction("Export as Markdown", Lucide.Download, act(it)) }
