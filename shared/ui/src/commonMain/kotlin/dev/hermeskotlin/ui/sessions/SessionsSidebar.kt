@@ -137,6 +137,7 @@ import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.zIndex
 import dev.hermeskotlin.core.threads.ChatThread
+import com.composables.icons.lucide.Paperclip
 import com.composables.icons.lucide.Pencil
 import com.composables.icons.lucide.Pin
 import com.composables.icons.lucide.RotateCcw
@@ -2185,6 +2186,8 @@ internal fun SessionActionsSheet(
     /** The Background processes row's text; it says how many run when the chat knows. */
     processesLabel: String = "Background processes",
     onCheckpoints: ((SessionSummary) -> Unit)? = null,
+    /** The files the chat has carried, sent and delivered. */
+    onDocuments: ((SessionSummary) -> Unit)? = null,
     /** The chat's goal and loops sheet; null when the chat has no goal, loop or heartbeat. */
     onControl: ((SessionSummary) -> Unit)? = null,
     /** A bot's chat: archive it and begin an empty one. */
@@ -2211,6 +2214,7 @@ internal fun SessionActionsSheet(
         onUsage?.let { SheetAction("Usage and cost", Lucide.Gauge, act(it)) }
         onProcesses?.let { SheetAction(processesLabel, Lucide.SquareTerminal, act(it)) }
         onCheckpoints?.let { SheetAction("Checkpoints", Lucide.History, act(it)) }
+        onDocuments?.let { SheetAction("Documents", Lucide.Paperclip, act(it)) }
         onControl?.let { SheetAction("Goal and loops", Lucide.Target, act(it)) }
         onExport?.let { SheetAction("Export as Markdown", Lucide.Download, act(it)) }
         onCopyId?.let { SheetAction("Copy session ID", Lucide.Copy, act(it)) }

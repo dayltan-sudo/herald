@@ -541,6 +541,7 @@ private fun Home(route: Route.Chat, app: AppViewModel, onOpenGateways: () -> Uni
         onProcesses = chat::openProcesses,
         backgroundWork = chat.background.collectAsStateWithLifecycle().value.takeIf { LocalAppSettings.current.showBackgroundWork } ?: BackgroundWork(),
         onCheckpoints = chat::openCheckpoints,
+        onDocuments = chat::openDocuments,
         // Only a chat carrying a goal, loop or heartbeat gets the row.
         onControl = chat::openControl.takeIf { chatState.control != null },
         botChat = route.target.bot != null,

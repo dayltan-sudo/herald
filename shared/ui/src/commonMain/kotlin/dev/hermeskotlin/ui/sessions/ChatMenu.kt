@@ -36,6 +36,8 @@ internal fun ChatMenu(
     /** What runs beside the turn, said on the Background processes row. */
     backgroundWork: BackgroundWork = BackgroundWork(),
     onCheckpoints: () -> Unit,
+    /** Opens the files sheet, given the chat's folder when the session list knows it. */
+    onDocuments: ((String?) -> Unit)? = null,
     /** The chat's goal and loops sheet; null when the chat has no goal, loop or heartbeat. */
     onControl: (() -> Unit)? = null,
     /**
@@ -76,6 +78,7 @@ internal fun ChatMenu(
         onProcesses = { onProcesses() },
         processesLabel = if (backgroundWork.any) "Background processes · ${backgroundWork.label}" else "Background processes",
         onCheckpoints = { onCheckpoints() },
+        onDocuments = onDocuments?.let { open -> { s: SessionSummary -> open(s.cwd) } },
         onControl = onControl?.let { open -> { _: SessionSummary -> open() } },
         onStartFresh = onStartFresh?.let { start -> { _: SessionSummary -> start() } }
             ?: thread?.let { t -> { _: SessionSummary -> freshThread = t } },

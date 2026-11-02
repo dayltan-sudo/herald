@@ -357,6 +357,8 @@ fun ChatScreen(
     var usageOpen by remember { mutableStateOf(false) }
     var processesOpen by remember { mutableStateOf(false) }
     var checkpointsOpen by remember { mutableStateOf(false) }
+    var documentsOpen by remember { mutableStateOf(false) }
+    var documentsCwd by remember { mutableStateOf<String?>(null) }
     var controlOpen by remember { mutableStateOf(false) }
     // Cleared (here or on another client) while open, there is nothing left to show.
     val hasControl = state.control != null
@@ -413,6 +415,10 @@ fun ChatScreen(
                 ChatRequest.OpenUsage -> usageOpen = true
                 ChatRequest.OpenProcesses -> processesOpen = true
                 ChatRequest.OpenCheckpoints -> checkpointsOpen = true
+                is ChatRequest.OpenDocuments -> {
+                    documentsCwd = request.cwd
+                    documentsOpen = true
+                }
                 // The goal may have been cleared since the menu offered it; an empty sheet would stay up.
                 ChatRequest.OpenControl -> controlOpen = viewModel.state.value.control != null
                 ChatRequest.StartVoice -> startVoiceChat()
@@ -545,6 +551,13 @@ fun ChatScreen(
         onRestore = viewModel::restoreCheckpoint,
         running = state.running,
         onDismiss = { checkpointsOpen = false },
+    )
+    DocumentsSheet(
+        visible = documentsOpen,
+        messages = state.messages,
+        cwd = documentsCwd,
+        onOpen = { previewing = it },
+        onDismiss = { documentsOpen = false },
     )
     SessionControlSheet(
         visible = controlOpen,

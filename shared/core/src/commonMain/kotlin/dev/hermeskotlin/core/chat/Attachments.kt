@@ -51,6 +51,11 @@ class ShownAttachment(
     val gatewayPath: String? = null,
     /** The uploaded image itself, for opening it full size; only for images sent from here. */
     val original: ByteArray? = null,
+    /**
+     * For a file or PDF kept as an `@file:` reference: the path the prompt named, usually relative to the
+     * chat's folder. Not [gatewayPath], which makes the chip load a thumbnail.
+     */
+    val refPath: String? = null,
 )
 
 /** Desktop's prompt when only images go out (`use-prompt-actions/submit.ts`). */
@@ -82,7 +87,7 @@ internal fun splitAttachmentRefs(text: String, keyPrefix: String): Pair<List<Sho
             val name = path.substringAfterLast('/')
             if (attachments.none { it.name == name }) {
                 val kind = if (name.endsWith(".pdf", ignoreCase = true)) AttachmentKind.Pdf else AttachmentKind.File
-                attachments += ShownAttachment("$keyPrefix-c${attachments.size}", name, kind)
+                attachments += ShownAttachment("$keyPrefix-c${attachments.size}", name, kind, refPath = path)
             }
         }
     }
@@ -93,8 +98,8 @@ internal fun splitAttachmentRefs(text: String, keyPrefix: String): Pair<List<Sho
         if (attachments.any { it.name == name && it.kind != AttachmentKind.Image }) return@filter false
         attachments += when {
             match.groupValues[1] == "image" -> ShownAttachment("$keyPrefix-r${attachments.size}", name, AttachmentKind.Image, gatewayPath = path)
-            name.endsWith(".pdf", ignoreCase = true) -> ShownAttachment("$keyPrefix-r${attachments.size}", name, AttachmentKind.Pdf)
-            else -> ShownAttachment("$keyPrefix-r${attachments.size}", name, AttachmentKind.File)
+            name.endsWith(".pdf", ignoreCase = true) -> ShownAttachment("$keyPrefix-r${attachments.size}", name, AttachmentKind.Pdf, refPath = path)
+            else -> ShownAttachment("$keyPrefix-r${attachments.size}", name, AttachmentKind.File, refPath = path)
         }
         false
     }

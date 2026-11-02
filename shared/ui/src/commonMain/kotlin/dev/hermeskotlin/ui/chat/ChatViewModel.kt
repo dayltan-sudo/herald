@@ -126,6 +126,10 @@ sealed interface ChatRequest {
     data object OpenUsage : ChatRequest
     data object OpenProcesses : ChatRequest
     data object OpenCheckpoints : ChatRequest
+
+    /** The Documents sheet; [cwd] is the chat's folder, where a file named relatively is looked for. */
+    data class OpenDocuments(val cwd: String?) : ChatRequest
+
     data object OpenControl : ChatRequest
 
     /** `/voice`: the screen asks for the microphone, then starts a voice chat. */
@@ -614,6 +618,11 @@ class ChatViewModel(
     /** Shows the checkpoints sheet (from the chat menu, or `/rollback`). */
     fun openCheckpoints() {
         viewModelScope.launch { _requests.send(ChatRequest.OpenCheckpoints) }
+    }
+
+    /** Shows the sheet of files the chat has carried (from the chat menu). */
+    fun openDocuments(cwd: String?) {
+        viewModelScope.launch { _requests.send(ChatRequest.OpenDocuments(cwd ?: target?.cwd)) }
     }
 
     /** Shows the goal and loops sheet (from the chat menu, or the strip above the composer). */
