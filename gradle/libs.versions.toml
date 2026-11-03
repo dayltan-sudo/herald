@@ -25,6 +25,9 @@ jlatexmath-android = "0.2.0"
 haze = "2.0.1"
 webrtc = "150.7871.01"
 room = "2.8.5"
+# The Terminal page: ConnectBot's SSH client library and its Compose terminal emulator view.
+connectbot-sshlib = "2.2.51"
+connectbot-termlib = "0.3.14"
 ksp = "2.3.12"
 # Wear OS companion
 play-services-wearable = "20.0.1"
@@ -108,6 +111,10 @@ wear-complications-data-source = { module = "androidx.wear.watchface:watchface-c
 # Offline cache
 room-runtime = { module = "androidx.room:room-runtime", version.ref = "room" }
 room-compiler = { module = "androidx.room:room-compiler", version.ref = "room" }
+
+# Terminal page (SSH into the gateway host)
+connectbot-sshlib = { module = "org.connectbot:sshlib", version.ref = "connectbot-sshlib" }
+connectbot-termlib = { module = "org.connectbot:termlib", version.ref = "connectbot-termlib" }
 
 # Testing
 kotlin-test = { module = "org.jetbrains.kotlin:kotlin-test", version.ref = "kotlin" }

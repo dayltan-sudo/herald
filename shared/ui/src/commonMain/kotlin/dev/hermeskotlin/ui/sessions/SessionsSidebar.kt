@@ -208,6 +208,7 @@ import dev.hermeskotlin.designsystem.title as titleStyle
 import dev.hermeskotlin.designsystem.typography
 import dev.hermeskotlin.designsystem.warning
 import dev.hermeskotlin.ui.PlatformBackHandler
+import dev.hermeskotlin.ui.terminal.TerminalPage
 import dev.hermeskotlin.ui.components.ConnectionLine
 import dev.hermeskotlin.ui.components.EmptyState
 import dev.hermeskotlin.ui.components.ListSkeleton
@@ -340,6 +341,7 @@ fun SessionsSidebar(
     var configOpen by remember { mutableStateOf(false) }
     var pluginsOpen by remember { mutableStateOf(false) }
     var insightsOpen by remember { mutableStateOf(false) }
+    var terminalOpen by remember { mutableStateOf(false) }
     /** The bot whose routines are showing. */
     var routinesOf by remember { mutableStateOf<Bot?>(null) }
     var actionTarget by remember { mutableStateOf<SessionSummary?>(null) }
@@ -376,7 +378,7 @@ fun SessionsSidebar(
     }
 
     // Back steps out of search or the Scheduled / Archived pages before it closes the drawer.
-    PlatformBackHandler(enabled = visible && (searchOpen || scheduledOpen || inboxOpen || routinesOf != null || capabilitiesOpen || configOpen || insightsOpen || state.filter != SessionListFilter.Recent)) {
+    PlatformBackHandler(enabled = visible && (searchOpen || scheduledOpen || inboxOpen || routinesOf != null || capabilitiesOpen || configOpen || insightsOpen || terminalOpen || state.filter != SessionListFilter.Recent)) {
         when {
             searchOpen -> closeSearch()
             scheduledOpen -> scheduledOpen = false
@@ -388,6 +390,7 @@ fun SessionsSidebar(
             capabilitiesOpen -> capabilitiesOpen = false
             configOpen -> configOpen = false
             insightsOpen -> insightsOpen = false
+            terminalOpen -> terminalOpen = false
             else -> viewModel.setFilter(SessionListFilter.Recent)
         }
     }
@@ -496,6 +499,8 @@ fun SessionsSidebar(
                 onSessionExpired = onSessionExpired,
                 onOpenPlugin = onOpenPlugin,
             )
+        } else if (terminalOpen && !searchOpen) {
+            TerminalPage(host = gateway.gatewayUrl.host, onBack = { terminalOpen = false })
         } else if (insightsOpen && !searchOpen) {
             InsightsPage(
                 gateway = gateway,
@@ -695,6 +700,7 @@ fun SessionsSidebar(
                                     NavLink(Lucide.Puzzle, "Plugins") { pluginsOpen = true },
                                     NavLink(Lucide.SlidersHorizontal, "Config") { configOpen = true },
                                     NavLink(Lucide.Archive, "Archived") { viewModel.setFilter(SessionListFilter.Archived) },
+                                    NavLink(Lucide.SquareTerminal, "Terminal") { terminalOpen = true },
                                 ),
                             )
                         }

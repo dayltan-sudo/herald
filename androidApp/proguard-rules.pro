@@ -24,3 +24,11 @@
 # Its JNI glue too: JNI_OnLoad finds these by name, and renamed they abort the app as a call starts.
 -keep class org.jni_zero.** { *; }
 -dontwarn org.jni_zero.**
+
+# Terminal page: sshlib registers its Ed25519 provider and key classes by name, and termlib's native code
+# calls back into its classes by name, so R8 must leave both alone. Their optional dependencies are absent.
+-keep class com.trilead.ssh2.** { *; }
+-keep class org.connectbot.terminal.** { *; }
+-dontwarn com.trilead.ssh2.**
+-dontwarn org.connectbot.**
+-dontwarn com.google.crypto.tink.**

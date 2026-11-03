@@ -30,6 +30,9 @@ kotlin {
             implementation(libs.androidx.core.ktx)
             // The Health switch asks for Health Connect's permissions through its own screen.
             implementation(libs.androidx.health.connect)
+            // The Terminal page: an SSH session to the gateway host, drawn by a Compose terminal view.
+            implementation(libs.connectbot.sshlib)
+            implementation(libs.connectbot.termlib)
         }
         commonTest.dependencies {
             implementation(libs.kotlin.test)
