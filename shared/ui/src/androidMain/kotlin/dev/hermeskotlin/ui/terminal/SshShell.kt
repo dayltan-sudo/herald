@@ -73,7 +73,7 @@ internal class SshShell(
         if (!c.authenticateWithPublicKey(user, privatePem.toCharArray(), null)) throw KeyRejectedException()
         val s = c.openSession()
         session = s
-        s.requestPTY("xterm-256color", columns, rows, widthPixels, heightPixels)
+        s.requestPTY("xterm-256color", columns, rows, widthPixels, heightPixels, null)
         s.startShell()
     }
 
