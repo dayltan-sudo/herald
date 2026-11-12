@@ -26,9 +26,16 @@ class WatchAccentsTest {
     }
 
     @Test
+    fun olympusSendsGoldWithIndigoOnIt() {
+        val olympus = watchAccent("Olympus")
+        assertEquals(0xFFF6C667.toInt(), olympus.fill)
+        assertEquals(0xFF1E1B3A.toInt(), olympus.onFill)
+    }
+
+    @Test
     fun anUnknownPresetIsBlueAndEachPresetHasItsOwnRevision() {
         assertEquals(watchAccent("Blue"), watchAccent("Mauve"))
-        val revisions = listOf("Blue", "Violet", "Green", "Orange", "Pink", "Teal").map { watchAccent(it).revision }
+        val revisions = listOf("Blue", "Violet", "Green", "Orange", "Pink", "Teal", "Olympus").map { watchAccent(it).revision }
         assertEquals(revisions.size, revisions.toSet().size)
         assertNotEquals(watchAccent("Blue").revision, watchAccent("Teal").revision)
     }
