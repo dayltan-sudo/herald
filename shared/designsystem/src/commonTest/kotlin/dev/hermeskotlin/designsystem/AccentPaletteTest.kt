@@ -21,6 +21,7 @@ class AccentPaletteTest {
         "light" to lightColors(palette.light),
         "dark" to darkColors(palette.dark),
         "black" to pureBlackColors(palette.black),
+        "olympus" to olympusColors(palette.dark),
     )
 
     @Test
@@ -46,6 +47,23 @@ class AccentPaletteTest {
                     assertTrue(ratio >= 4.5f, "${palette.name} $scheme: accent text on $ground is $ratio:1")
                 }
             }
+        }
+    }
+
+    @Test
+    fun olympusTextReadsOnTheIndigoSurfaces() {
+        val colors = olympusColors(AccentPalette.Blue.dark)
+        val grounds = listOf(background, surface, surface2, surface3, surfaceElevated, well).map { colors.getValue(it) }
+        for (ground in grounds) {
+            for (token in listOf(text, textSecondary, headingText, toolAccent, thinkingText)) {
+                val ratio = contrast(colors.getValue(token), ground)
+                assertTrue(ratio >= 4.5f, "olympus: $token on $ground is $ratio:1")
+            }
+        }
+        // Metadata text is quieter: it reads at 4.5:1 on every ground but surface 3, where it falls just short.
+        for (ground in grounds - colors.getValue(surface3)) {
+            val ratio = contrast(colors.getValue(textTertiary), ground)
+            assertTrue(ratio >= 4.5f, "olympus: tertiary text on $ground is $ratio:1")
         }
     }
 

@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- The app mark rising from a cloud, with a gold bolt, on dusk indigo (AppIcons). -->
+<adaptive-icon xmlns:android="http://schemas.android.com/apk/res/android">
+    <background android:drawable="@color/launcher_olympus" />
+    <foreground android:drawable="@drawable/ic_launcher_foreground_olympus" />
+    <monochrome android:drawable="@drawable/ic_launcher_foreground" />
+</adaptive-icon>

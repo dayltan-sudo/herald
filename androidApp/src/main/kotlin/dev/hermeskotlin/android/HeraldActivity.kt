@@ -87,7 +87,7 @@ class HeraldActivity : FragmentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         enableEdgeToEdge()
         super.onCreate(savedInstanceState)
-        if (windowPrefs.contains(KEY_DARK)) applyWindowTheme(windowPrefs.getBoolean(KEY_DARK, false))
+        if (windowPrefs.contains(KEY_DARK)) applyWindowTheme(windowPrefs.getBoolean(KEY_DARK, false), windowPrefs.getBoolean(KEY_OLYMPUS, false))
         // The stored setting is read asynchronously; this copy decides the very first frame.
         val lockOn = windowPrefs.getBoolean(KEY_APP_LOCK, false)
         // Switching the app icon restarts Herald in a new task: that's no fresh open, so it stays unlocked.
@@ -97,7 +97,7 @@ class HeraldActivity : FragmentActivity() {
         followAppLockSetting()
         askForNotificationsOnFirstTurn()
         if (savedInstanceState == null) handleIntent(intent)
-        val browser = InAppBrowser(this) { windowPrefs.getBoolean(KEY_DARK, false) }
+        val browser = InAppBrowser(this, dark = { windowPrefs.getBoolean(KEY_DARK, false) }, olympus = { windowPrefs.getBoolean(KEY_OLYMPUS, false) })
         askPhoneQuestionsInApp()
         bots.republishIfIconChanged()
         setContent {
@@ -116,9 +116,12 @@ class HeraldActivity : FragmentActivity() {
                 App(
                     appVersion = BuildConfig.VERSION_NAME,
                     releasesRepo = BuildConfig.RELEASES_REPO,
-                    onDarkTheme = { dark ->
-                        applyWindowTheme(dark)
-                        windowPrefs.edit { putBoolean(KEY_DARK, dark) }
+                    onWindowTheme = { dark, olympus ->
+                        applyWindowTheme(dark, olympus)
+                        windowPrefs.edit {
+                            putBoolean(KEY_DARK, dark)
+                            putBoolean(KEY_OLYMPUS, olympus)
+                        }
                     },
                     locked = locked,
                     onUnlock = lockGate::ask,
@@ -255,9 +258,17 @@ class HeraldActivity : FragmentActivity() {
         if (!isChangingConfigurations) appLock.onBackground(SystemClock.elapsedRealtime())
     }
 
-    /** The app theme can differ from the system's, so the window and bar icons follow the app. */
-    private fun applyWindowTheme(dark: Boolean) {
-        window.setBackgroundDrawableResource(if (dark) R.color.window_background_dark else R.color.window_background_light)
+    /**
+     * The app theme can differ from the system's, so the window and bar icons follow the app. Olympus is dark: its
+     * light bar icons read on the indigo, which is also the window behind the first frame.
+     */
+    private fun applyWindowTheme(dark: Boolean, olympus: Boolean) {
+        val background = when {
+            olympus -> R.color.window_background_olympus
+            dark -> R.color.window_background_dark
+            else -> R.color.window_background_light
+        }
+        window.setBackgroundDrawableResource(background)
         val style = if (dark) SystemBarStyle.dark(Color.TRANSPARENT) else SystemBarStyle.light(Color.TRANSPARENT, Color.TRANSPARENT)
         enableEdgeToEdge(statusBarStyle = style, navigationBarStyle = style)
     }
@@ -277,6 +288,7 @@ class HeraldActivity : FragmentActivity() {
 
     private companion object {
         const val KEY_DARK = "dark"
+        const val KEY_OLYMPUS = "olympus"
         const val KEY_ASKED_NOTIFICATIONS = "asked_notifications"
         const val KEY_APP_LOCK = "app_lock"
     }

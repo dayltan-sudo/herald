@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    The Olympus app icon's foreground: the app mark (ic_launcher_foreground.xml) at 0.6 scale, rising from a cloud
+    of three overlapping circles on a flat base, with a small gold lightning bolt over the cloud's right edge.
+    Drawn in the 108dp adaptive-icon grid, inside the 66dp safe zone.
+-->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <path
+        android:fillColor="@color/launcher_olympus_cloud"
+        android:pathData="M27,70a9,9 0 1 0 18,0a9,9 0 1 0 -18,0z" />
+    <path
+        android:fillColor="@color/launcher_olympus_cloud"
+        android:pathData="M37,63a13,13 0 1 0 26,0a13,13 0 1 0 -26,0z" />
+    <path
+        android:fillColor="@color/launcher_olympus_cloud"
+        android:pathData="M56,69a10,10 0 1 0 20,0a10,10 0 1 0 -20,0z" />
+    <path
+        android:fillColor="@color/launcher_olympus_cloud"
+        android:pathData="M36,70h30v9h-30z" />
+    <group
+        android:pivotX="54"
+        android:pivotY="54"
+        android:scaleX="0.6"
+        android:scaleY="0.6"
+        android:translateY="-10">
+        <path
+            android:fillColor="@color/launcher_olympus_mark"
+            android:pathData="M38.5,30a5.5,5.5 0,0 1,5.5 5.5v37a5.5,5.5 0,0 1,-5.5 5.5a5.5,5.5 0,0 1,-5.5 -5.5v-37a5.5,5.5 0,0 1,5.5 -5.5z" />
+        <path
+            android:fillColor="@color/launcher_olympus_mark"
+            android:pathData="M69.5,30a5.5,5.5 0,0 1,5.5 5.5v37a5.5,5.5 0,0 1,-5.5 5.5a5.5,5.5 0,0 1,-5.5 -5.5v-37a5.5,5.5 0,0 1,5.5 -5.5z" />
+        <path
+            android:fillColor="@color/launcher_olympus_mark"
+            android:pathData="M38,43h18a5,5 0,0 1,5 5a5,5 0,0 1,-5 5h-18a5,5 0,0 1,-5 -5a5,5 0,0 1,5 -5z" />
+        <path
+            android:fillColor="@color/launcher_olympus_mark"
+            android:pathData="M52,55h18a5,5 0,0 1,5 5a5,5 0,0 1,-5 5h-18a5,5 0,0 1,-5 -5a5,5 0,0 1,5 -5z" />
+    </group>
+    <path
+        android:fillColor="@color/launcher_olympus_bolt"
+        android:strokeColor="@color/launcher_olympus"
+        android:strokeWidth="1.6"
+        android:strokeLineJoin="round"
+        android:pathData="M78,53L68,67H74L70,81L82,63H76.5Z" />
+</vector>

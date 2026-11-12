@@ -23,14 +23,11 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.unit.Density
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.composeunstyled.theme.ColorScheme
 import com.composeunstyled.theme.Theme
 import dev.hermeskotlin.core.settings.AppSettings
 import dev.hermeskotlin.core.settings.SettingsStore
-import dev.hermeskotlin.core.settings.ThemeMode
 import dev.hermeskotlin.designsystem.AccentPalette
 import dev.hermeskotlin.designsystem.LocalAccentPalette
-import dev.hermeskotlin.designsystem.PureBlack
 import dev.hermeskotlin.designsystem.hermesTheme
 import dev.hermeskotlin.designsystem.components.LocalCodeWrap
 import dev.hermeskotlin.designsystem.components.LocalGlow
@@ -107,7 +104,8 @@ val LocalAppVersion = staticCompositionLocalOf<String?> { null }
 
 /**
  * Root composable shared by every platform. Koin must be started by the platform host first.
- * [onDarkTheme] tells the host which theme is showing, e.g. to color the system bar icons.
+ * [onWindowTheme] tells the host which theme is showing, e.g. to color the system bar icons: whether it is dark, and
+ * whether it is Olympus's dusk indigo, which the window behind the app matches.
  * [releasesRepo] is the GitHub `owner/name` the build was released from, to look for newer releases.
  * While [locked] (App lock), a cover hides everything until [onUnlock] lets the user back in.
  * [phoneQuestion] is a phone tool asking before it changes something, shown over any screen.
@@ -116,24 +114,18 @@ val LocalAppVersion = staticCompositionLocalOf<String?> { null }
 fun App(
     appVersion: String? = null,
     releasesRepo: String? = null,
-    onDarkTheme: (Boolean) -> Unit = {},
+    onWindowTheme: (dark: Boolean, olympus: Boolean) -> Unit = { _, _ -> },
     locked: Boolean = false,
     onUnlock: () -> Unit = {},
     phoneQuestion: PhoneQuestion? = null,
 ) {
     // Nothing is drawn until the stored settings are read, so the first frame has the right theme.
     val settings = koinInject<SettingsStore>().settings.collectAsStateWithLifecycle().value ?: return
-    val dark = when (settings.theme) {
-        ThemeMode.System -> isSystemInDarkTheme()
-        ThemeMode.Light -> false
-        ThemeMode.Dark -> true
-    }
-    LaunchedEffect(dark) { onDarkTheme(dark) }
-    val scheme = when {
-        !dark -> ColorScheme.Light
-        settings.pureBlack -> PureBlack
-        else -> ColorScheme.Dark
-    }
+    val systemDark = isSystemInDarkTheme()
+    val dark = settings.theme.isDark(systemDark)
+    val olympus = windowIsOlympus(settings.theme, settings.pureBlack)
+    LaunchedEffect(dark, olympus) { onWindowTheme(dark, olympus) }
+    val scheme = colorSchemeFor(settings.theme, settings.pureBlack, systemDark)
     val density = LocalDensity.current
     val palette = AccentPalette.named(settings.accent)
     hermesTheme(palette)(scheme) {

@@ -301,6 +301,8 @@ import dev.hermeskotlin.designsystem.surfaceElevated
 import dev.hermeskotlin.designsystem.text as textColor
 import dev.hermeskotlin.designsystem.textSecondary
 import dev.hermeskotlin.designsystem.textTertiary
+import dev.hermeskotlin.designsystem.thinkingText
+import dev.hermeskotlin.designsystem.toolAccent
 import dev.hermeskotlin.designsystem.display
 import dev.hermeskotlin.designsystem.typography
 import dev.hermeskotlin.designsystem.warning
@@ -2518,7 +2520,7 @@ private fun Reasoning(text: String, streaming: Boolean) {
         expanded = expanded,
         onToggle = { expanded = !expanded },
     ) {
-        MarkdownText(text.trim(), streaming = streaming, textStyle = Theme[typography][bodySmall].copy(color = Theme[colors][textSecondary]))
+        MarkdownText(text.trim(), streaming = streaming, textStyle = Theme[typography][bodySmall].copy(color = Theme[colors][thinkingText]))
     }
 }
 
@@ -2677,7 +2679,7 @@ private fun ToolKindIcon(icon: ImageVector) {
             .background(Theme[colors][surface3], CircleShape),
         contentAlignment = Alignment.Center,
     ) {
-        UnstyledIcon(icon, contentDescription = null, tint = Theme[colors][textTertiary], modifier = Modifier.size(11.dp))
+        UnstyledIcon(themedToolIcon(icon), contentDescription = null, tint = Theme[colors][toolAccent], modifier = Modifier.size(11.dp))
     }
 }
 

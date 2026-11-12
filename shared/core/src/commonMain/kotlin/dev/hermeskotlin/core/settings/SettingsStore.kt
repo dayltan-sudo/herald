@@ -12,7 +12,8 @@ import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.serialization.Serializable
 
-enum class ThemeMode { System, Light, Dark }
+/** [Olympus] is a dark theme on dusk-indigo surfaces; it leaves the accent to [AppSettings.accent]. */
+enum class ThemeMode { System, Light, Dark, Olympus }
 
 /** The accent [AppSettings.accent] starts with: Desktop's blue. */
 const val DEFAULT_ACCENT = "Blue"

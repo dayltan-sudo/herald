@@ -25,6 +25,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
@@ -38,11 +39,13 @@ import com.composables.icons.lucide.CircleX
 import com.composables.icons.lucide.Lucide
 import com.composables.icons.lucide.ShieldAlert
 import com.composables.icons.lucide.Wrench
+import com.composables.icons.lucide.Zap
 import com.composeunstyled.Text
 import com.composeunstyled.UnstyledIcon
 import com.composeunstyled.theme.Theme
 import dev.hermeskotlin.core.chat.ToolActivity
 import dev.hermeskotlin.core.chat.ToolRisk
+import dev.hermeskotlin.core.settings.ThemeMode
 import dev.hermeskotlin.designsystem.background
 import dev.hermeskotlin.designsystem.caption
 import dev.hermeskotlin.designsystem.code
@@ -61,8 +64,17 @@ import dev.hermeskotlin.designsystem.success
 import dev.hermeskotlin.designsystem.text
 import dev.hermeskotlin.designsystem.textSecondary
 import dev.hermeskotlin.designsystem.textTertiary
+import dev.hermeskotlin.designsystem.toolAccent
 import dev.hermeskotlin.designsystem.typography
 import dev.hermeskotlin.designsystem.warning
+import dev.hermeskotlin.ui.LocalAppSettings
+
+/** In Olympus mode the generic tool glyph, a wrench, is a lightning bolt as in the CLI; a kind with its own icon keeps it. */
+internal fun toolMarker(icon: ImageVector, olympus: Boolean): ImageVector = if (olympus && icon == Lucide.Wrench) Lucide.Zap else icon
+
+/** [toolMarker] for the theme the app shows now. */
+@Composable
+internal fun themedToolIcon(icon: ImageVector): ImageVector = toolMarker(icon, LocalAppSettings.current.theme == ThemeMode.Olympus)
 
 /**
  * One tool call in a reply's tool list: its name, time and one-line summary; tap it to see what it
@@ -92,7 +104,7 @@ internal fun ToolRow(tool: ToolActivity, messageKey: String? = null) {
                     tool.failed -> UnstyledIcon(Lucide.CircleX, contentDescription = "Failed", tint = Theme[colors][danger], modifier = Modifier.size(14.dp))
                     tool.summary != null || tool.durationSeconds != null || tool.output != null ->
                         UnstyledIcon(Lucide.Check, contentDescription = null, tint = Theme[colors][success], modifier = Modifier.size(14.dp))
-                    else -> UnstyledIcon(Lucide.Wrench, contentDescription = null, tint = Theme[colors][textTertiary], modifier = Modifier.size(14.dp))
+                    else -> UnstyledIcon(themedToolIcon(Lucide.Wrench), contentDescription = null, tint = Theme[colors][toolAccent], modifier = Modifier.size(14.dp))
                 }
             }
             Column(Modifier.weight(1f)) {

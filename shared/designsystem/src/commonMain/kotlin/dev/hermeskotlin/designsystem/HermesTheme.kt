@@ -17,9 +17,12 @@ private val baseText = TextStyle(fontFamily = Geist, letterSpacing = (-0.005).em
 /** Dark with true black backgrounds, for OLED screens. */
 val PureBlack = ColorScheme("pure_black")
 
+/** Dark on dusk indigo, the Olympus theme mode; with pure black on, [PureBlack] is used instead. */
+val OlympusMode = ColorScheme("olympus")
+
 /**
  * The app theme in Herald blue. Light/dark follow the system unless a [ColorScheme] is passed:
- * `HermesTheme(ColorScheme.Dark) { ... }`, or [PureBlack]. [hermesTheme] gives it in another accent.
+ * `HermesTheme(ColorScheme.Dark) { ... }`, [PureBlack] or [OlympusMode]. [hermesTheme] gives it in another accent.
  * The colors are in ThemeColors.kt.
  */
 val HermesTheme = buildHermesTheme(AccentPalette.Blue)
@@ -68,6 +71,13 @@ private fun buildHermesTheme(palette: AccentPalette) = buildThemeV2 {
         properties[colors] = darkColors(palette.dark)
         defaultContentColor = Palette.Text
         defaultIndication = rememberColoredIndication(Palette.Text)
+        defaultTextSelectionColors = TextSelectionColors(palette.dark.text, palette.dark.text.copy(alpha = 0.35f))
+    }
+
+    colorScheme(OlympusMode) {
+        properties[colors] = olympusColors(palette.dark)
+        defaultContentColor = Palette.OlympusText
+        defaultIndication = rememberColoredIndication(Palette.OlympusText)
         defaultTextSelectionColors = TextSelectionColors(palette.dark.text, palette.dark.text.copy(alpha = 0.35f))
     }
 

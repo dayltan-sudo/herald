@@ -922,26 +922,29 @@ class ChatViewModel(
         }
     }
 
-    /** `/skin [light|dark|black|system]`: this app's theme; bare, it steps to the next one. */
+    /** `/skin [light|dark|black|olympus|system]`: this app's theme; bare, it steps to the next one. */
     private fun skin(chat: ChatSession, arg: String) {
         val current = settings.settings.value ?: AppSettings()
         val next = when (arg.lowercase()) {
             "" -> when (current.theme) {
                 ThemeMode.System -> current.copy(theme = ThemeMode.Light)
                 ThemeMode.Light -> current.copy(theme = ThemeMode.Dark)
-                ThemeMode.Dark -> current.copy(theme = ThemeMode.System)
+                ThemeMode.Dark -> current.copy(theme = ThemeMode.Olympus)
+                ThemeMode.Olympus -> current.copy(theme = ThemeMode.System)
             }
             "light" -> current.copy(theme = ThemeMode.Light)
             "dark" -> current.copy(theme = ThemeMode.Dark, pureBlack = false)
             "black", "oled", "amoled" -> current.copy(theme = ThemeMode.Dark, pureBlack = true)
+            "olympus" -> current.copy(theme = ThemeMode.Olympus, pureBlack = false)
             "system", "auto", "default" -> current.copy(theme = ThemeMode.System)
-            else -> return chat.showCommandOutput("/skin", "Themes here: light, dark, black or system.", failed = true)
+            else -> return chat.showCommandOutput("/skin", "Themes here: light, dark, black, olympus or system.", failed = true)
         }
         settings.update { next }
         val name = when (next.theme) {
             ThemeMode.System -> "matches the system"
             ThemeMode.Light -> "light"
             ThemeMode.Dark -> if (next.pureBlack) "black" else "dark"
+            ThemeMode.Olympus -> if (next.pureBlack) "black (Olympus)" else "olympus"
         }
         chat.showCommandOutput("/skin", "Theme: $name.")
     }
