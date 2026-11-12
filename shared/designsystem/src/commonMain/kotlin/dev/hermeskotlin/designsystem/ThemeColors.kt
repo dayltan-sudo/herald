@@ -41,6 +41,25 @@ internal object Palette {
     val BlackWell = Color(0xFF0C0C0E)
     val BlackSheet = Color(0xFF141418)
 
+    // Olympus: dusk indigo grounds and lavender-tinted text (docs/olympus-mockup.html). Each step up is lighter, as in
+    // graphite: well < surface < sheet < background = surface 2 < surface 3 < thumb. The surface-3 and thumb steps and
+    // the quiet text (Text5, StrokeStrong) are derived from the mockup's hues.
+    val OlympusBg = Color(0xFF1E1B3A)
+    val OlympusSurface = Color(0xFF15122B)
+    val OlympusSurface3 = Color(0xFF2A2552)
+    val OlympusWell = Color(0xFF100E22)
+    val OlympusSheet = Color(0xFF181533)
+    val OlympusThumb = Color(0xFF312C5E)
+    val OlympusLine = Color(0xFF3D3770)
+    val OlympusLineStrong = Color(0xFF5B52A0)
+    val OlympusText = Color(0xFFECE8FF)
+    val OlympusText2 = Color(0xFFC9BFF0)
+    val OlympusText4 = Color(0xFF8F86BD)
+    val OlympusText5 = Color(0xFF7A72A8)
+    val OlympusPeach = Color(0xFFFFB38A)
+    val OlympusTeal = Color(0xFF5EEAD4)
+    val OlympusThinking = Color(0xFFA89BD6)
+
     val Danger = Color(0xFFF85149)
     val Success = Color(0xFF3FB950)
     val Warning = Color(0xFFF5A524)
@@ -80,11 +99,36 @@ internal fun lightColors(accentColors: AccentColors) = mapOf(
     dangerSoft to Palette.LightDanger.copy(alpha = 0.09f),
     successSoft to Palette.LightSuccess.copy(alpha = 0.10f),
     warningSoft to Palette.LightWarning.copy(alpha = 0.10f),
+    headingText to Palette.LightText,
+    toolAccent to Palette.LightText4,
+    thinkingText to Palette.LightText2,
 )
 
 /** Pure black: the dark roles on a true black ground, with each graphite step pulled toward black. */
 internal fun pureBlackColors(accentColors: AccentColors) = darkColors(
     accentColors, Color.Black, Palette.BlackSurface, Palette.BlackSurface2, Palette.BlackSurface3, Palette.BlackWell, Palette.BlackSheet,
+)
+
+/**
+ * Olympus: the dark roles on dusk indigo. It sets surfaces and neutral colors only; the accent is the user's own
+ * ([accentColors] is the palette's dark one), so the Olympus gold stays a preset to pick, not forced. Pure black
+ * with Olympus is [pureBlackColors], not this.
+ */
+internal fun olympusColors(accentColors: AccentColors) = darkColors(
+    accentColors, Palette.OlympusBg, Palette.OlympusSurface, Palette.OlympusBg, Palette.OlympusSurface3, Palette.OlympusWell, Palette.OlympusSheet,
+) + mapOf(
+    thumb to Palette.OlympusThumb,
+    text to Palette.OlympusText,
+    textSecondary to Palette.OlympusText2,
+    textTertiary to Palette.OlympusText4,
+    textMuted to Palette.OlympusText5,
+    inverse to Palette.OlympusText,
+    onInverse to Palette.OlympusBg,
+    stroke to Palette.OlympusLine,
+    strokeStrong to Palette.OlympusLineStrong,
+    headingText to Palette.OlympusPeach,
+    toolAccent to Palette.OlympusTeal,
+    thinkingText to Palette.OlympusThinking,
 )
 
 /** Dark and pure black share every role but the grounds they sit on. */
@@ -128,4 +172,7 @@ internal fun darkColors(
     dangerSoft to Palette.Danger.copy(alpha = 0.14f),
     successSoft to Palette.Success.copy(alpha = 0.13f),
     warningSoft to Palette.Warning.copy(alpha = 0.13f),
+    headingText to Palette.Text,
+    toolAccent to Palette.Text4,
+    thinkingText to Palette.Text2,
 )

@@ -88,6 +88,38 @@ class SettingsStoreTest {
     }
 
     @Test
+    fun olympusIsRememberedBesideThePureBlackChoice() = runTest {
+        val disk = InMemoryKeyValueStore()
+        val first = SettingsStore(disk, backgroundScope)
+        first.update { it.copy(theme = ThemeMode.Olympus, pureBlack = true, accent = "Olympus") }
+        advanceUntilIdle()
+
+        val restored = SettingsStore(disk, backgroundScope).settings.filterNotNull().first()
+        assertEquals(ThemeMode.Olympus, restored.theme)
+        assertEquals(true, restored.pureBlack)
+        // The mode doesn't set the accent: that stays whatever was picked.
+        assertEquals("Olympus", restored.accent)
+    }
+
+    @Test
+    fun aMissingOrUnknownStoredThemeIsSystemAndEarlierOnesStillRead() = runTest {
+        val disk = InMemoryKeyValueStore()
+        disk.put("settings.v1", """{"accent":"Teal"}""")
+        val missing = SettingsStore(disk, backgroundScope).settings.filterNotNull().first()
+        assertEquals(ThemeMode.System, missing.theme)
+        assertEquals("Teal", missing.accent)
+
+        // A mode from a newer version this one doesn't know.
+        disk.put("settings.v1", """{"theme":"Aurora"}""")
+        assertEquals(ThemeMode.System, SettingsStore(disk, backgroundScope).settings.filterNotNull().first().theme)
+
+        for (mode in listOf(ThemeMode.System, ThemeMode.Light, ThemeMode.Dark, ThemeMode.Olympus)) {
+            disk.put("settings.v1", """{"theme":"${mode.name}"}""")
+            assertEquals(mode, SettingsStore(disk, backgroundScope).settings.filterNotNull().first().theme)
+        }
+    }
+
+    @Test
     fun pinnedStaysOpenUntilFoldedAndRemembersIt() = runTest {
         val disk = InMemoryKeyValueStore()
         // Settings saved before the option existed show every pinned chat.

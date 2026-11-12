@@ -53,6 +53,15 @@ val textTertiary = ThemeToken<Color>("text_tertiary")
 /** Below [textTertiary]: placeholders, disabled labels, the quietest metadata. */
 val textMuted = ThemeToken<Color>("text_muted")
 
+/** Headings in a reply's Markdown. Most schemes draw them in [text]; Olympus in peach. */
+val headingText = ThemeToken<Color>("heading_text")
+
+/** A tool call's icon, in the reply's tool list and pill. Most schemes draw it in [textTertiary]; Olympus in teal. */
+val toolAccent = ThemeToken<Color>("tool_accent")
+
+/** The folded reasoning's text. Most schemes draw it in [textSecondary]; Olympus in a softer violet. */
+val thinkingText = ThemeToken<Color>("thinking_text")
+
 /** The accent as a fill: primary buttons, toggles, progress, the user's bubble. Text on it is [onAccent]. */
 val accent = ThemeToken<Color>("accent")
 val onAccent = ThemeToken<Color>("on_accent")

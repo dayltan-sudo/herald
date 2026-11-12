@@ -8,6 +8,12 @@
     <color name="launcher_pink">#B0327E</color>
     <color name="launcher_teal">#0C6A84</color>
 
+    <!-- Olympus: dusk indigo behind a lavender mark, a cloud and a gold bolt (the Olympus theme and accent). -->
+    <color name="launcher_olympus">#1E1B3A</color>
+    <color name="launcher_olympus_cloud">#5B52A0</color>
+    <color name="launcher_olympus_mark">#ECE8FF</color>
+    <color name="launcher_olympus_bolt">#F6C667</color>
+
     <!-- The patterns: a background, its shapes' fill and their outline. -->
     <color name="launcher_hearts">#F0244A</color>
     <color name="launcher_hearts_shape">#FF5C78</color>

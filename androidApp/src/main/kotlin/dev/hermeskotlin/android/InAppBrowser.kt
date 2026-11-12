@@ -13,9 +13,14 @@ import androidx.core.content.ContextCompat
 /**
  * Opens links from the app's screens. Web pages open in a Custom Tab over Herald, in its colors, so
  * reading a link doesn't leave the chat; anything else (mail, an APK download, no browser with Custom
- * Tabs) goes to whichever app handles it. [dark] is the theme the app shows now.
+ * Tabs) goes to whichever app handles it. [dark] is the theme the app shows now, and [olympus] whether that dark
+ * is Olympus's dusk indigo.
  */
-class InAppBrowser(private val activity: Activity, private val dark: () -> Boolean) : UriHandler {
+class InAppBrowser(
+    private val activity: Activity,
+    private val dark: () -> Boolean,
+    private val olympus: () -> Boolean = { false },
+) : UriHandler {
 
     override fun openUri(uri: String) {
         val parsed = Uri.parse(uri)
@@ -43,7 +48,10 @@ class InAppBrowser(private val activity: Activity, private val dark: () -> Boole
             .setShowTitle(true)
             .setColorScheme(if (dark()) CustomTabsIntent.COLOR_SCHEME_DARK else CustomTabsIntent.COLOR_SCHEME_LIGHT)
             .setColorSchemeParams(CustomTabsIntent.COLOR_SCHEME_LIGHT, colors(R.color.window_background_light))
-            .setColorSchemeParams(CustomTabsIntent.COLOR_SCHEME_DARK, colors(R.color.window_background_dark))
+            .setColorSchemeParams(
+                CustomTabsIntent.COLOR_SCHEME_DARK,
+                colors(if (olympus()) R.color.window_background_olympus else R.color.window_background_dark),
+            )
             .build()
     }
 

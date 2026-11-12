@@ -4,6 +4,8 @@
     <!-- The app theme can override the system one; HeraldActivity picks between these. -->
     <color name="window_background_light">#F7F7F9</color>
     <color name="window_background_dark">#0A0A0C</color>
+    <!-- The Olympus theme's background (the design system's Palette.OlympusBg), without pure black. -->
+    <color name="window_background_olympus">#1E1B3A</color>
     <!-- The brand mark keeps its own blue, as the design's herald-logo.svg does. -->
     <color name="launcher_background">#0053FD</color>
     <color name="notification_accent">#2F6BF5</color>
