@@ -69,17 +69,14 @@ import com.composeunstyled.Text
 import com.composeunstyled.TextInput
 import com.composeunstyled.UnstyledIcon
 import com.composeunstyled.UnstyledTextField
-import com.composeunstyled.theme.ColorScheme
 import com.composeunstyled.theme.Theme
 import dev.hermeskotlin.core.chat.ChatMessage
 import dev.hermeskotlin.core.chat.ChatState
 import dev.hermeskotlin.core.chat.InputRequest
 import dev.hermeskotlin.core.connection.ConnectionState
 import dev.hermeskotlin.core.settings.SettingsStore
-import dev.hermeskotlin.core.settings.ThemeMode
 import dev.hermeskotlin.designsystem.AccentPalette
 import dev.hermeskotlin.designsystem.LocalAccentPalette
-import dev.hermeskotlin.designsystem.PureBlack
 import dev.hermeskotlin.designsystem.accent
 import dev.hermeskotlin.designsystem.accentSoft
 import dev.hermeskotlin.designsystem.accentText
@@ -135,6 +132,7 @@ import dev.hermeskotlin.ui.chat.connectionLabel
 import dev.hermeskotlin.ui.chat.currentAction
 import dev.hermeskotlin.ui.chat.rememberImageBitmap
 import dev.hermeskotlin.ui.chat.userBubbleShape
+import dev.hermeskotlin.ui.colorSchemeFor
 import dev.hermeskotlin.ui.voice.DictationState
 import dev.hermeskotlin.ui.voice.briefError
 import kotlinx.coroutines.flow.emptyFlow
@@ -158,16 +156,7 @@ fun AssistantPanel(
     onClose: () -> Unit,
 ) {
     val settings = koinInject<SettingsStore>().settings.collectAsState().value ?: return
-    val dark = when (settings.theme) {
-        ThemeMode.System -> isSystemInDarkTheme()
-        ThemeMode.Light -> false
-        ThemeMode.Dark -> true
-    }
-    val scheme = when {
-        !dark -> ColorScheme.Light
-        settings.pureBlack -> PureBlack
-        else -> ColorScheme.Dark
-    }
+    val scheme = colorSchemeFor(settings.theme, settings.pureBlack, isSystemInDarkTheme())
     val density = LocalDensity.current
     val palette = AccentPalette.named(settings.accent)
     hermesTheme(palette)(scheme) {

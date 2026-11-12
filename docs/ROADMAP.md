@@ -47,9 +47,10 @@ uses. The protocol itself is described in [hermes-protocol-research.md](hermes-p
 - [x] The app mark (`HeraldMark`), also the launcher, themed and notification icons
 - [x] `DropdownMenu`, and `Toast` with an action ("Archived · Undo")
 - [ ] Chat bubble, tool card, approval card as design-system components (they live in `shared/ui` for now)
-- [x] Theme picker (system / light / dark) and pure black
-- [x] Accent color presets (Settings → Appearance → Accent): blue, violet, green, orange, pink and teal, each tuned for light, dark and pure black
+- [x] Theme picker (system / light / dark / Olympus) and pure black
+- [x] Accent color presets (Settings → Appearance → Accent): blue, violet, green, orange, pink, teal and Olympus (gold), each tuned for light, dark and pure black
 - [x] App icon (Settings → Appearance → App icon): the mark on each accent color, or over hearts, marks or chat bubbles
+- [x] Olympus theme mode (Settings → Appearance → Theme): a fourth mode beside system / light / dark, dark on dusk-indigo surfaces with peach headings, teal tool icons and softer-violet reasoning; the accent stays the one picked, pure black still gives black, and the window and `/skin olympus` follow. Its lightning-bolt tool marker and an Olympus app icon (the mark rising from a cloud, with a gold bolt) come with it. The reasoning marker keeps its brain icon until `Lucide.Cloud` is confirmed in the icon library
 - [x] Glow switch (Settings → Appearance): off, the colored glows go (the halo behind each screen, and the light under prompts, the app mark, Send, New chat, main buttons, live subagent cards, the voice screen, and the assistant edge's halo, which keeps its crisp line) and everything sits flat
 
 ---

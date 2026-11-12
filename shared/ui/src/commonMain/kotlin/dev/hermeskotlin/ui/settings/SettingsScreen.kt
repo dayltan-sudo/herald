@@ -102,6 +102,7 @@ import com.composables.icons.lucide.Smartphone
 import com.composables.icons.lucide.Sun
 import com.composables.icons.lucide.WrapText
 import com.composables.icons.lucide.Wrench
+import com.composables.icons.lucide.Zap
 import com.composeunstyled.Text
 import com.composeunstyled.UnstyledIcon
 import com.composeunstyled.theme.Theme
@@ -349,6 +350,7 @@ internal fun SettingsView(
                                     ThemeMode.System -> Lucide.Smartphone
                                     ThemeMode.Light -> Lucide.Sun
                                     ThemeMode.Dark -> Lucide.Moon
+                                    ThemeMode.Olympus -> Lucide.Zap
                                 }
                             },
                         )
@@ -365,7 +367,7 @@ internal fun SettingsView(
                     Divider()
                     SwitchRow(
                         title = "Pure black",
-                        detail = "True black backgrounds in dark mode, easier on OLED screens.",
+                        detail = "True black backgrounds in dark and Olympus mode, easier on OLED screens.",
                         checked = settings.pureBlack,
                         onCheckedChange = { on -> onUpdate { it.copy(pureBlack = on) } },
                     )

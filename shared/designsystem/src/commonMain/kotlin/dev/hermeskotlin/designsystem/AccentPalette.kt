@@ -48,7 +48,11 @@ class AccentPalette private constructor(
         val Pink = mixed("Pink", light = Color(0xFFB0327E), dark = Color(0xFFF778BA))
         val Teal = mixed("Teal", light = Color(0xFF0C6A84), dark = Color(0xFF22D3EE))
 
-        val all: List<AccentPalette> = listOf(Blue, Violet, Green, Orange, Pink, Teal)
+        // Gold, with dusk indigo (not near-black) on it. Light mode takes a darker gold: #9a6a00 would read at only
+        // 3.9:1 as text on the light cards.
+        val Olympus = olympus(light = Color(0xFF8A5F00), dark = Color(0xFFF6C667))
+
+        val all: List<AccentPalette> = listOf(Blue, Violet, Green, Orange, Pink, Teal, Olympus)
 
         /** The palette called [name], or [Blue] for a name this version doesn't know. */
         fun named(name: String?): AccentPalette = all.firstOrNull { it.name == name } ?: Blue
@@ -58,6 +62,16 @@ class AccentPalette private constructor(
             val darkColors = AccentColors(dark, DarkText, text = dark, soft = dark.copy(alpha = 0.14f))
             return AccentPalette(
                 name,
+                light = AccentColors(light, Color.White, text = light, soft = light.copy(alpha = 0.10f)),
+                dark = darkColors,
+                black = darkColors,
+            )
+        }
+
+        private fun olympus(light: Color, dark: Color): AccentPalette {
+            val darkColors = AccentColors(dark, Color(0xFF1E1B3A), text = dark, soft = dark.copy(alpha = 0.14f))
+            return AccentPalette(
+                "Olympus",
                 light = AccentColors(light, Color.White, text = light, soft = light.copy(alpha = 0.10f)),
                 dark = darkColors,
                 black = darkColors,

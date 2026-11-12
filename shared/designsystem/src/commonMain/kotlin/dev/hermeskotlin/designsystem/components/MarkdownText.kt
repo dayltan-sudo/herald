@@ -75,6 +75,7 @@ import dev.hermeskotlin.designsystem.caption
 import dev.hermeskotlin.designsystem.code
 import dev.hermeskotlin.designsystem.colors
 import dev.hermeskotlin.designsystem.heading
+import dev.hermeskotlin.designsystem.headingText
 import dev.hermeskotlin.designsystem.radii
 import dev.hermeskotlin.designsystem.radiusMedium
 import dev.hermeskotlin.designsystem.stroke
@@ -157,7 +158,7 @@ fun MarkdownText(text: String, modifier: Modifier = Modifier, streaming: Boolean
     val compact = compactStyle(replyStyle, textStyle)
     val bodyStyle = compact ?: replyStyle
     val codeStyle = Theme[typography][code].copy(color = Theme[colors][textColor])
-    val headingStyle = Theme[typography][heading].copy(color = Theme[colors][textColor])
+    val headingStyle = Theme[typography][heading].copy(color = Theme[colors][headingText])
     val linkColor = Theme[colors][accentText]
     val markdownColors = DefaultMarkdownColors(
         text = bodyStyle.color,
@@ -167,7 +168,7 @@ fun MarkdownText(text: String, modifier: Modifier = Modifier, streaming: Boolean
         tableBackground = Theme[colors][surface],
     )
     val markdownTypography = DefaultMarkdownTypography(
-        h1 = Theme[typography][title].copy(color = Theme[colors][textColor]),
+        h1 = Theme[typography][title].copy(color = Theme[colors][headingText]),
         h2 = headingStyle.copy(fontSize = 19.sp, lineHeight = 26.sp),
         h3 = headingStyle,
         h4 = headingStyle,
