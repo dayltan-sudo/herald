@@ -57,6 +57,18 @@ class AccentPaletteTest {
     }
 
     @Test
+    fun olympusIsGoldWithIndigoOnIt() {
+        assertEquals(AccentPalette.Olympus, AccentPalette.named("Olympus"))
+        assertTrue(AccentPalette.Olympus in AccentPalette.all)
+        for (colors in listOf(AccentPalette.Olympus.dark, AccentPalette.Olympus.black)) {
+            assertEquals(Color(0xFFF6C667), colors.accent)
+            assertEquals(Color(0xFF1E1B3A), colors.onAccent)
+        }
+        // Light mode takes a darker gold, so accent text stays readable on the light cards.
+        assertEquals(Color(0xFF8A5F00), AccentPalette.Olympus.light.accent)
+    }
+
+    @Test
     fun namesAreUnique() {
         assertEquals(AccentPalette.all.size, AccentPalette.all.map { it.name }.toSet().size)
     }
