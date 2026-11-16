@@ -58,6 +58,7 @@ import com.composables.icons.lucide.Eye
 import com.composables.icons.lucide.EyeOff
 import com.composables.icons.lucide.History
 import com.composables.icons.lucide.Lucide
+import com.composables.icons.lucide.MessageSquare
 import com.composables.icons.lucide.MessageSquarePlus
 import com.composables.icons.lucide.Pencil
 import com.composables.icons.lucide.Pin
@@ -135,6 +136,9 @@ interface BotActions {
 
     /** The bot's newest conversation that isn't its Bot Chat (a routine run, a side thread). */
     fun openRecent(bot: Bot)
+
+    /** Every chat the bot has besides its Bot Chat, listed newest first to open one. */
+    fun sessions(bot: Bot)
 
     /** A throwaway chat with the bot, apart from its permanent one. */
     fun newChat(bot: Bot)
@@ -445,6 +449,7 @@ private fun BotCard(
             MenuAction(if (pinned) "Unpin" else "Pin to top", if (pinned) Lucide.PinOff else Lucide.Pin, act { actions.setPinned(bot, !pinned) })
             MenuAction(if (hidden) "Unhide" else "Hide", if (hidden) Lucide.Eye else Lucide.EyeOff, act { actions.setHidden(bot, !hidden) })
             if (recent != null) MenuAction("Open recent session", Lucide.History, act { actions.openRecent(bot) })
+            MenuAction("Sessions", Lucide.MessageSquare, act { actions.sessions(bot) })
             MenuAction("New chat with ${bot.label}", Lucide.MessageSquarePlus, act { actions.newChat(bot) })
             MenuAction("Routines", Lucide.CalendarClock, act { actions.routines(bot) })
             if (bot.canonicalSession != null) MenuAction("Start fresh", Lucide.RotateCcw, act(onStartOver))
