@@ -158,6 +158,7 @@ import dev.hermeskotlin.core.bots.SidebarMode
 import dev.hermeskotlin.core.connection.ConnectionState
 import dev.hermeskotlin.designsystem.components.SegmentedControl
 import dev.hermeskotlin.ui.bots.BotActions
+import dev.hermeskotlin.ui.bots.BotSessionsSheet
 import dev.hermeskotlin.ui.bots.BotsRoster
 import dev.hermeskotlin.ui.bots.BotsUiState
 import dev.hermeskotlin.ui.bots.NeedsYou
@@ -328,6 +329,8 @@ fun SessionsSidebar(
     var insightsOpen by remember { mutableStateOf(false) }
     /** The bot whose routines are showing. */
     var routinesOf by remember { mutableStateOf<Bot?>(null) }
+    /** The bot whose chats the Sessions sheet lists; null keeps it closed. */
+    var sessionsOf by remember { mutableStateOf<Bot?>(null) }
     var actionTarget by remember { mutableStateOf<SessionSummary?>(null) }
     var renameTarget by remember { mutableStateOf<SessionSummary?>(null) }
     var deleteTarget by remember { mutableStateOf<SessionSummary?>(null) }
@@ -537,6 +540,9 @@ fun SessionsSidebar(
                                         onOpenBotSession(bot, recent.id ?: return, recent.title?.takeIf { it.isNotBlank() } ?: bot.label)
                                     }
                                     override fun newChat(bot: Bot) = onNewBotChat(bot)
+                                    override fun sessions(bot: Bot) {
+                                        sessionsOf = bot
+                                    }
                                     override fun create() = onEditBot(null)
                                     override fun edit(bot: Bot) = onEditBot(bot)
                                     override fun duplicate(bot: Bot) = bots.duplicate(bot)
@@ -750,6 +756,15 @@ fun SessionsSidebar(
     StartThreadFreshDialog(freshThread, onDismiss = { freshThread = null }) { thread ->
         viewModel.startFresh(thread) { fresh -> onOpenSession(SessionSummary(fresh.sessionId, title = fresh.title, pinned = true), null) }
     }
+    BotSessionsSheet(
+        bot = sessionsOf,
+        url = gateway.gatewayUrl,
+        onDismiss = { sessionsOf = null },
+        onOpen = { bot, id, title ->
+            sessionsOf = null
+            onOpenBotSession(bot, id, title)
+        },
+    )
     RenameDialog(renameTarget, onDismiss = { renameTarget = null }, onRename = viewModel::rename)
     ProjectActionsSheet(
         project = projectActions,
@@ -969,6 +984,7 @@ private object PreviewBotActions : BotActions {
     override fun setHidden(bot: Bot, hidden: Boolean) = Unit
     override fun startFresh(bot: Bot) = Unit
     override fun openRecent(bot: Bot) = Unit
+    override fun sessions(bot: Bot) = Unit
     override fun newChat(bot: Bot) = Unit
     override fun create() = Unit
     override fun edit(bot: Bot) = Unit
