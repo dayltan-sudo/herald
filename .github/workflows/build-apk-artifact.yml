@@ -1,4 +1,4 @@
-# Manual trigger: build the debug APKs (phone + watch) and upload them as
+# Manual trigger: build the APKs (phone debug, phone dev, watch) and upload them as
 # workflow artifacts, so they can be downloaded and installed without any
 # local Android/JDK toolchain. Added on dayltan-sudo's fork only; not part
 # of upstream Herald's own CI.
@@ -24,14 +24,42 @@ jobs:
 
       - uses: gradle/actions/setup-gradle@3f5f9adaf7d9fecd50b5935e54106014257a94e6 # v6.4.0
 
+      # The dev build is what gets sideloaded onto the phone, so it must be signed with the same
+      # long-lived key every run: a per-runner debug key would make each APK refuse to install over
+      # the last one, and the uninstall wipes its data and sign-in. Without the secret the build
+      # still succeeds, signed with the throwaway debug key.
+      - name: Restore the Herald Dev signing key
+        env:
+          DEV_KEYSTORE_BASE64: ${{ secrets.HERALD_DEV_KEYSTORE_BASE64 }}
+        run: |
+          if [ -z "$DEV_KEYSTORE_BASE64" ]; then
+            echo "::warning::HERALD_DEV_KEYSTORE_BASE64 is not set; the dev APK will be signed with a throwaway debug key and will not install over a previous one."
+            exit 0
+          fi
+          printf '%s' "$DEV_KEYSTORE_BASE64" | base64 -d > "$RUNNER_TEMP/herald-dev.p12"
+          echo "HERALD_DEV_KEYSTORE=$RUNNER_TEMP/herald-dev.p12" >> "$GITHUB_ENV"
+
       - name: Assemble debug APKs
-        run: ./gradlew --no-daemon :androidApp:assembleDebug :wearApp:assembleDebug
+        env:
+          HERALD_DEV_KEYSTORE_PASSWORD: ${{ secrets.HERALD_DEV_KEYSTORE_PASSWORD }}
+          HERALD_DEV_KEY_ALIAS: ${{ secrets.HERALD_DEV_KEY_ALIAS }}
+          HERALD_DEV_KEY_PASSWORD: ${{ secrets.HERALD_DEV_KEY_PASSWORD }}
+        run: ./gradlew --no-daemon :androidApp:assembleDebug :androidApp:assembleDev :wearApp:assembleDebug
 
       - name: Upload phone debug APK
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: herald-debug-apk
           path: androidApp/build/outputs/apk/debug/*.apk
+
+      # "Herald Dev": installs beside the real app (applicationId suffix .dev, own data and sign-in)
+      # and installs over the previous dev APK, keeping that data, when the signing key matches.
+      - name: Upload phone dev APK
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: herald-dev-apk
+          path: androidApp/build/outputs/apk/dev/*.apk
+          if-no-files-found: error
 
       - name: Upload watch debug APK
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1

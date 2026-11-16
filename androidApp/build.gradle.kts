@@ -41,6 +41,17 @@ android {
             keyAlias = keystore.getProperty("keyAlias")
             keyPassword = keystore.getProperty("keyPassword")
         }
+        // "Herald Dev" has its own long-lived key, handed in by CI from a repository secret. Without it the
+        // build falls back to the debug key, which every machine and every CI runner regenerates, so a new
+        // dev APK could not install over the last one ("App not installed") and an uninstall would wipe it.
+        val devStore = System.getenv("HERALD_DEV_KEYSTORE")?.takeIf { it.isNotBlank() }?.let { file(it) }
+        if (devStore != null && devStore.exists()) create("heraldDev") {
+            storeFile = devStore
+            storeType = "PKCS12"
+            storePassword = System.getenv("HERALD_DEV_KEYSTORE_PASSWORD")
+            keyAlias = System.getenv("HERALD_DEV_KEY_ALIAS")
+            keyPassword = System.getenv("HERALD_DEV_KEY_PASSWORD")
+        }
     }
 
     // WebRTC's native library is 7–16 MB per ABI; compressed in the APK it is about a third of that.
@@ -91,12 +102,13 @@ android {
         // "Herald Dev": a build that installs beside the real app, with its own data and sign-in, for trying work
         // in progress on a phone without touching the installed Herald. It's built like a release (R8, not
         // debuggable), so it scrolls and animates as the real app will; a debuggable Compose build runs far slower.
-        // It keeps the debug key, so each one installs over the last.
+        // It is signed with the long-lived dev key when CI supplies one, else the debug key, so a rebuilt dev
+        // APK installs over the last one and keeps its data and sign-in.
         create("dev") {
             initWith(getByName("release"))
             applicationIdSuffix = ".dev"
             versionNameSuffix = "-dev"
-            signingConfig = signingConfigs.getByName("debug")
+            signingConfig = signingConfigs.findByName("heraldDev") ?: signingConfigs.getByName("debug")
             matchingFallbacks += listOf("release")
         }
     }
